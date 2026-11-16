@@ -33,6 +33,7 @@ QUARANTINE_DIR    = BASE_DIR / 'quarantine'
 REPORTS_DIR       = BASE_DIR / 'reports'
 MODELS_DIR        = BASE_DIR / 'models'
 LOGS_DIR          = BASE_DIR / 'logs'
+os.environ.setdefault('MPLCONFIGDIR', str(LOGS_DIR / 'matplotlib'))
 THREAT_INTEL_DIR  = BASE_DIR / 'threat_intel'
 YARA_RULES_DIR    = BASE_DIR / 'yara_rules'
 SANDBOX_DIR       = BASE_DIR / 'sandbox'

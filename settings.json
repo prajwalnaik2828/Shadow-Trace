@@ -1,5 +1,7 @@
 {
-    "monitored_folders": [],
+    "monitored_folders": [
+        "C:\\Users\\prajw\\Downloads"
+    ],
     "always_on_monitoring": false,
     "ask_user_before_steg": false,
     "auto_escalate_lsb": true,

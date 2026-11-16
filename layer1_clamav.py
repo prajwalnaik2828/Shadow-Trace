@@ -12,24 +12,24 @@ from utils import ensure_clamd_running
 # Returns exact virus name, family, type and category
 # for every detection.
 
+_last_clamd_check = 0
+_clamd_available = False
+
 def get_clamd_connection():
+    global _last_clamd_check, _clamd_available
+    now = time.time()
+    # If checked recently and failed, skip immediately without stalling pipeline
+    if not _clamd_available and (now - _last_clamd_check < 60):
+        return None
+
     try:
-        try:
-            cd = clamd.ClamdNetworkSocket('127.0.0.1', 3310)
-            cd.ping()
-            return cd
-        except Exception as e:
-            # Ping failed, try to start it
-            utils.log_error(f"Clamd direct connect failed: {e}")
-            ensure_clamd_running()
-            time.sleep(3)
-            
-            # Try again
-            cd = clamd.ClamdNetworkSocket('127.0.0.1', 3310)
-            cd.ping()
-            return cd
+        cd = clamd.ClamdNetworkSocket('127.0.0.1', 3310, timeout=1)
+        cd.ping()
+        _clamd_available = True
+        return cd
     except Exception as e:
-        utils.log_error(f"Failed to establish connection to ClamAV: {e}")
+        _last_clamd_check = now
+        _clamd_available = False
         return None
 
 def extract_threat_details(threat_name):

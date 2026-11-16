@@ -351,15 +351,19 @@ reports/stego/20261107_193701_artifact_evidence_package.zip
 
 ---
 
-## 11. Interface Previews
+## 11. Interface Previews & Demonstrations
 
-| Forensic Dashboard | Triage & Steganalysis |
-|:---:|:---:|
-| *(Screenshots / Dashboard UI Preview Placeholder)* | *(Screenshots / Stego Analysis & Grad-CAM Heatmap Placeholder)* |
+### 1. Forensic Dashboard & Real-Time Telemetry
+https://github.com/prajwalnaik2828/Shadow-Trace/raw/main/ui/assets/videos/dashboard_demo.mp4
 
-| Forensic Dossier & Sealing | Case Manager & Audit Trail |
-|:---:|:---:|
-| *(Screenshots / PDF Forensic Report Preview Placeholder)* | *(Screenshots / Chain of Custody Ledger Placeholder)* |
+### 2. Forensic Dossier & Executive Summary Report Generation
+https://github.com/prajwalnaik2828/Shadow-Trace/raw/main/ui/assets/videos/forensic_reports_demo.mp4
+
+### 3. Case Manager & Evidence Explorer
+*(Walkthrough video coming soon)*
+
+### 4. Quarantine Isolation Vault & Recovery
+*(Walkthrough video coming soon)*
 
 ---
 

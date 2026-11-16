@@ -111,7 +111,6 @@ def fetch_all_reports() -> list:
 
     results = []
     for i, (pdf, subfolder) in enumerate(all_pdfs):
-        seal_result = verify_report_seal(str(pdf))
         cat = subfolder.lower()
         if cat in ('reports', 'uncategorised'):
             status = 'clean'
@@ -124,9 +123,28 @@ def fetch_all_reports() -> list:
 
         pdf_path_str = str(pdf).replace('\\', '/')
         h = hashlib.md5(pdf.name.encode()).hexdigest()[:8].upper() + '...'
-        mod_str = datetime.fromtimestamp(
-            pdf.stat().st_mtime
-        ).strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            st = pdf.stat()
+            mod_str = datetime.fromtimestamp(st.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            size_kb = round(st.st_size / 1024, 1)
+            mod_time = st.st_mtime
+        except Exception:
+            mod_str = 'Unknown'
+            size_kb = 0
+            mod_time = 0
+
+        seal_file = pdf.with_suffix('.seal.json')
+        has_seal = seal_file.exists()
+        gen_at = mod_str
+        sess_id = ''
+        if has_seal:
+            try:
+                with open(seal_file, 'r', encoding='utf-8') as sf:
+                    sdata = json.load(sf)
+                    gen_at = sdata.get('generated_at', mod_str)
+                    sess_id = (sdata.get('session_id', '') or '')[:8] + '...'
+            except Exception:
+                pass
 
         results.append({
             'id': str(i + 1),
@@ -135,17 +153,17 @@ def fetch_all_reports() -> list:
             'path': pdf_path_str,
             'pdf_path': pdf_path_str,
             'status': status,
-            'size_kb': round(pdf.stat().st_size / 1024, 1),
+            'size_kb': size_kb,
             'modified': mod_str,
             'date': mod_str,
-            'modified_timestamp': pdf.stat().st_mtime,
+            'modified_timestamp': mod_time,
             'hash': h,
             'threat': 'CRITICAL' if status == 'stego' else ('MEDIUM' if status == 'suspicious' else 'LOW'),
             'summary': f"Forensic report for {pdf.name}. Verdict: {status.upper()}.",
-            'valid': seal_result.get('valid', False),
-            'generated_at': seal_result.get('generated_at', 'Unknown'),
-            'session_id': (seal_result.get('session_id', '') or '')[:8] + '...',
-            'error': seal_result.get('error'),
+            'valid': has_seal,
+            'generated_at': gen_at,
+            'session_id': sess_id,
+            'error': None if has_seal else 'Seal file not found. Report cannot be verified.',
             'category': subfolder,
         })
 

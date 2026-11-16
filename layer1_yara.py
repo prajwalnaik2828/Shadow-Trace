@@ -1,6 +1,7 @@
 import yara
 import glob
 import os
+import time
 import threading
 from pathlib import Path
 import config
@@ -15,9 +16,20 @@ from config import INFORMATIONAL_RULES
 
 _compiled_rules = None
 _rules_lock = threading.Lock()
+CACHE_FILE = Path(getattr(config, 'BASE_DIR', Path('.'))) / 'logs' / 'yara_rules.compiled'
 
 def load_yara_rules():
     try:
+        # Fast load from compiled cache if available
+        if CACHE_FILE.exists():
+            try:
+                t0 = time.time()
+                compiled = yara.load(str(CACHE_FILE))
+                print(f"[YARA] Instant-loaded pre-compiled rules in {time.time()-t0:.2f}s")
+                return compiled
+            except Exception as ce:
+                print(f"[YARA] Cached rules invalid ({ce}), recompiling from source...")
+
         yar_files = glob.glob(config.YARA_RULES_PATTERN, recursive=True)
         yara_files = glob.glob(config.YARA_RULES_PATTERN_YARA, recursive=True)
         all_rule_files = list(set(yar_files + yara_files))
@@ -53,6 +65,15 @@ def load_yara_rules():
             filepaths_dict[namespace] = rule_file
             
         compiled = yara.compile(filepaths=filepaths_dict)
+
+        # Save binary cache for subsequent instant scans
+        try:
+            CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            compiled.save(str(CACHE_FILE))
+            print(f"[YARA] Cached compiled rules to {CACHE_FILE.name}")
+        except Exception as se:
+            print(f"[YARA] Could not write cache file: {se}")
+
         return compiled
         
     except Exception as e:

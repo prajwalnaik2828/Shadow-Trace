@@ -50,6 +50,7 @@ vt_cache.json
 url_captures.json
 shadowtrace_url_cache.json
 *url_cache*.json
+UIUX/dashboard_cache.js
 
 # Test outputs & logs
 test_*.html

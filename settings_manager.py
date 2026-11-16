@@ -106,6 +106,14 @@ def get_settings() -> Dict[str, Any]:
         except Exception as e:
             print(f"[SETTINGS_MANAGER] Error initializing {SETTINGS_FILE}: {e}")
     
+    # Fallback to .env / config values if empty in settings.json
+    if not defaults.get("vt_api_key"):
+        defaults["vt_api_key"] = getattr(config, 'VIRUSTOTAL_API_KEY', "")
+    if not defaults.get("ha_api_key"):
+        defaults["ha_api_key"] = getattr(config, 'HYBRID_ANALYSIS_KEY', "")
+    if not defaults.get("monitored_folders"):
+        defaults["monitored_folders"] = [str(d) for d in config.get_monitored_dirs()]
+    
     return defaults
 
 def get_setting(key: str, default: Any = None) -> Any:
@@ -468,6 +476,14 @@ def reset_to_defaults() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Fallback to .env / config values if empty in settings.json
+    if not defaults.get("vt_api_key"):
+        defaults["vt_api_key"] = getattr(config, 'VIRUSTOTAL_API_KEY', "")
+    if not defaults.get("ha_api_key"):
+        defaults["ha_api_key"] = getattr(config, 'HYBRID_ANALYSIS_KEY', "")
+    if not defaults.get("monitored_folders"):
+        defaults["monitored_folders"] = [str(d) for d in config.get_monitored_dirs()]
+    
     return defaults
 
 def backup_databases() -> Dict[str, Any]:

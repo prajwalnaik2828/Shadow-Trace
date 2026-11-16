@@ -508,7 +508,7 @@
                         id="reportSearch" placeholder="Search hash, filename..." type="text">
                 </div>
                 <div class="flex justify-between items-center font-label-caps text-[10px] text-on-surface-variant">
-                    <span class="" id="report-count">6 REPORTS LOADED</span>
+                    <span class="" id="report-count">LOADING REPORTS...</span>
                     <div class="relative inline-block text-left flex items-center" id="sort-dropdown-container"><button
                             class="h-8 px-3 border border-[#333333] bg-[#242424] text-on-surface-variant hover:text-primary hover:border-primary transition-colors flex items-center justify-center mr-2 cursor-pointer"
                             id="calendar-filter-btn" onclick="toggleDateTray()" title="Select Filter Date"><span
@@ -715,130 +715,88 @@
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto custom-scrollbar" id="reportList">
-                <div onclick="selectReport('1')"
-                    class="p-4 border-b border-outline hover:bg-surface-container transition-all cursor-pointer group">
+                <div class="p-4 border-b border-outline/30 animate-pulse space-y-2">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="status-dot bg-error"></div>
-                            <span
-                                class="font-data-mono text-xs font-bold truncate max-w-[180px]">IMG_9228_ACQ.PNG</span>
+                            <div class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></div>
+                            <div class="h-3 w-36 bg-surface-container-highest rounded"></div>
                         </div>
-                        <span
-                            class="material-symbols-outlined text-xs text-on-surface-variant opacity-0 group-hover:opacity-100">verified_user</span>
+                        <div class="w-3 h-3 bg-surface-container-highest rounded"></div>
                     </div>
-                    <div class="flex justify-between font-data-mono text-[10px] text-on-surface-variant">
-                        <span class="">HASH: 7F8A...E2D1</span>
-                        <span class="">12 OCT 2023</span>
+                    <div class="flex justify-between">
+                        <div class="h-2.5 w-24 bg-surface-container-high rounded"></div>
+                        <div class="h-2.5 w-16 bg-surface-container-high rounded"></div>
                     </div>
                 </div>
-
-                <div onclick="selectReport('2')"
-                    class="p-4 border-b border-outline hover:bg-surface-container transition-all cursor-pointer group">
+                <div class="p-4 border-b border-outline/30 animate-pulse space-y-2">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="status-dot bg-warning"></div>
-                            <span
-                                class="font-data-mono text-xs font-bold truncate max-w-[180px]">SYS_DUMP_001.BIN</span>
+                            <div class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></div>
+                            <div class="h-3 w-40 bg-surface-container-highest rounded"></div>
                         </div>
-                        <span
-                            class="material-symbols-outlined text-xs text-on-surface-variant opacity-0 group-hover:opacity-100">verified_user</span>
+                        <div class="w-3 h-3 bg-surface-container-highest rounded"></div>
                     </div>
-                    <div class="flex justify-between font-data-mono text-[10px] text-on-surface-variant">
-                        <span class="">HASH: B32C...110A</span>
-                        <span class="">11 OCT 2023</span>
+                    <div class="flex justify-between">
+                        <div class="h-2.5 w-20 bg-surface-container-high rounded"></div>
+                        <div class="h-2.5 w-16 bg-surface-container-high rounded"></div>
                     </div>
                 </div>
-
-                <div onclick="selectReport('3')"
-                    class="p-4 border-b border-outline hover:bg-surface-container transition-all cursor-pointer group">
+                <div class="p-4 border-b border-outline/30 animate-pulse space-y-2">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="status-dot bg-success"></div>
-                            <span
-                                class="font-data-mono text-xs font-bold truncate max-w-[180px]">ENCRYPTED_VOICE.M4A</span>
+                            <div class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></div>
+                            <div class="h-3 w-28 bg-surface-container-highest rounded"></div>
                         </div>
-                        <span
-                            class="material-symbols-outlined text-xs text-on-surface-variant opacity-0 group-hover:opacity-100">verified_user</span>
+                        <div class="w-3 h-3 bg-surface-container-highest rounded"></div>
                     </div>
-                    <div class="flex justify-between font-data-mono text-[10px] text-on-surface-variant">
-                        <span class="">HASH: 0A8F...CC32</span>
-                        <span class="">10 OCT 2023</span>
+                    <div class="flex justify-between">
+                        <div class="h-2.5 w-24 bg-surface-container-high rounded"></div>
+                        <div class="h-2.5 w-16 bg-surface-container-high rounded"></div>
                     </div>
                 </div>
-
-                <div onclick="selectReport('4')"
-                    class="p-4 border-b border-outline hover:bg-surface-container transition-all cursor-pointer group">
+                <div class="p-4 border-b border-outline/30 animate-pulse space-y-2">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="status-dot bg-error"></div>
-                            <span class="font-data-mono text-xs font-bold truncate max-w-[180px]">ARCHIVE_X_8.ZIP</span>
+                            <div class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></div>
+                            <div class="h-3 w-36 bg-surface-container-highest rounded"></div>
                         </div>
-                        <span
-                            class="material-symbols-outlined text-xs text-on-surface-variant opacity-0 group-hover:opacity-100">verified_user</span>
+                        <div class="w-3 h-3 bg-surface-container-highest rounded"></div>
                     </div>
-                    <div class="flex justify-between font-data-mono text-[10px] text-on-surface-variant">
-                        <span class="">HASH: FF21...991B</span>
-                        <span class="">09 OCT 2023</span>
+                    <div class="flex justify-between">
+                        <div class="h-2.5 w-20 bg-surface-container-high rounded"></div>
+                        <div class="h-2.5 w-16 bg-surface-container-high rounded"></div>
                     </div>
                 </div>
-
-                <div onclick="selectReport('5')"
-                    class="p-4 border-b border-outline hover:bg-surface-container transition-all cursor-pointer group">
+                <div class="p-4 border-b border-outline/30 animate-pulse space-y-2">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="status-dot bg-success"></div>
-                            <span
-                                class="font-data-mono text-xs font-bold truncate max-w-[180px]">USER_CONFIG.JSON</span>
+                            <div class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></div>
+                            <div class="h-3 w-32 bg-surface-container-highest rounded"></div>
                         </div>
-                        <span
-                            class="material-symbols-outlined text-xs text-on-surface-variant opacity-0 group-hover:opacity-100">verified_user</span>
+                        <div class="w-3 h-3 bg-surface-container-highest rounded"></div>
                     </div>
-                    <div class="flex justify-between font-data-mono text-[10px] text-on-surface-variant">
-                        <span class="">HASH: 33D1...A042</span>
-                        <span class="">08 OCT 2023</span>
+                    <div class="flex justify-between">
+                        <div class="h-2.5 w-24 bg-surface-container-high rounded"></div>
+                        <div class="h-2.5 w-16 bg-surface-container-high rounded"></div>
                     </div>
                 </div>
-
-                <div onclick="selectReport('6')"
-                    class="p-4 border-b border-outline hover:bg-surface-container transition-all cursor-pointer group">
+                <div class="p-4 border-b border-outline/30 animate-pulse space-y-2">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="status-dot bg-warning"></div>
-                            <span
-                                class="font-data-mono text-xs font-bold truncate max-w-[180px]">MEM_SNAPSHOT.DMP</span>
+                            <div class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></div>
+                            <div class="h-3 w-30 bg-surface-container-highest rounded"></div>
                         </div>
-                        <span
-                            class="material-symbols-outlined text-xs text-on-surface-variant opacity-0 group-hover:opacity-100">verified_user</span>
+                        <div class="w-3 h-3 bg-surface-container-highest rounded"></div>
                     </div>
-                    <div class="flex justify-between font-data-mono text-[10px] text-on-surface-variant">
-                        <span class="">HASH: EE43...BC21</span>
-                        <span class="">07 OCT 2023</span>
+                    <div class="flex justify-between">
+                        <div class="h-2.5 w-20 bg-surface-container-high rounded"></div>
+                        <div class="h-2.5 w-16 bg-surface-container-high rounded"></div>
                     </div>
                 </div>
             </div>
         </aside>
         <!-- Right Panel: Detail View -->
         <main class="flex-1 bg-background relative flex flex-col overflow-hidden" id="main-content">
-            <div id="sk-main-content" class="absolute inset-0 z-[90] bg-background flex flex-col p-8 gap-6 transition-opacity duration-500">
-                <div class="h-[50px] flex gap-4 border-b border-outline">
-                    <div class="w-32 h-8 bg-surface-container rounded animate-pulse"></div>
-                    <div class="w-32 h-8 bg-surface-container rounded animate-pulse"></div>
-                </div>
-                <div class="flex-1 flex flex-col gap-6">
-                    <div class="h-48 bg-surface-container rounded-xl animate-pulse"></div>
-                    <div class="h-64 bg-surface-container rounded-xl animate-pulse"></div>
-                </div>
-            </div>
-            <script>
-                window.addEventListener('load', () => {
-                    setTimeout(() => {
-                        const rPanel = document.getElementById('sk-report-panel');
-                        const mCont = document.getElementById('sk-main-content');
-                        if (rPanel) { rPanel.style.opacity = '0'; setTimeout(() => rPanel.remove(), 500); }
-                        if (mCont) { mCont.style.opacity = '0'; setTimeout(() => mCont.remove(), 500); }
-                    }, 400);
-                });
-            </script>
             <!-- Empty State -->
             <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-gutter" id="empty-state">
                 <div class="w-24 h-24 border border-outline-variant flex items-center justify-center mb-6 opacity-20">
@@ -2351,16 +2309,7 @@ HostUrl=https://suspicious-archive.xyz/downloads/payload_v2.exe</pre>
         </main>
     </div>
     <!-- Hidden Data -->
-    <script id="reports-data" type="application/json">
-    [
-        {"id": "1", "filename": "IMG_9228_ACQ_report.pdf", "status": "stego", "date": "12 OCT 2023", "hash": "7F8A...E2D1", "threat": "CRITICAL", "summary": "Initial automated analysis has identified high-probability steganographic content within the pixel data. Model consensus: 98.4% certainty."},
-        {"id": "2", "filename": "SYS_DUMP_001_report.pdf", "status": "suspicious", "date": "11 OCT 2023", "hash": "B32C...110A", "threat": "MEDIUM", "summary": "Anomalous patterns detected in memory dump. Possible buffer overflow artifacts or hidden configuration data in reserved sectors."},
-        {"id": "3", "filename": "ENCRYPTED_VOICE_report.pdf", "status": "clean", "date": "10 OCT 2023", "hash": "0A8F...CC32", "threat": "LOW", "summary": "Audio stream analyzed. Waveform integrity checks passed. No high-frequency anomalies detected above noise floor."},
-        {"id": "4", "filename": "ARCHIVE_X_8_report.pdf", "status": "stego", "date": "09 OCT 2023", "hash": "FF21...991B", "threat": "CRITICAL", "summary": "ZIP file structure contains hidden EOF data. LSB analysis of embedded thumbnails indicates secondary archive payloads."},
-        {"id": "5", "filename": "USER_CONFIG_report.pdf", "status": "clean", "date": "08 OCT 2023", "hash": "33D1...A042", "threat": "NONE", "summary": "JSON schema validated against target application. No obfuscated strings or suspicious encoding found in value fields."},
-        {"id": "6", "filename": "MEM_SNAPSHOT_report.pdf", "status": "suspicious", "date": "07 OCT 2023", "hash": "EE43...BC21", "threat": "HIGH", "summary": "Process tree shows unlinked executable pages. Signature matches known anti-forensic rootkit behavior."}
-    ]
-</script>
+    <script id="reports-data" type="application/json">[]</script>
     <script>
         // State Management
         let reports = [];
@@ -2380,6 +2329,14 @@ HostUrl=https://suspicious-archive.xyz/downloads/payload_v2.exe</pre>
             return true;
         }
 
+        function removeSkeleton() {
+            const rPanel = document.getElementById('sk-report-panel');
+            if (rPanel) {
+                rPanel.style.opacity = '0';
+                setTimeout(() => { try { rPanel.remove(); } catch(e){} }, 300);
+            }
+        }
+
         // Initialize App
         document.addEventListener('DOMContentLoaded', async () => {
             window.selectedReport = null;
@@ -2389,14 +2346,9 @@ HostUrl=https://suspicious-archive.xyz/downloads/payload_v2.exe</pre>
                     const realReports = JSON.parse(rawData);
                     if (realReports && realReports.length > 0) {
                         reports = realReports.filter(isRealReport);
-                    } else {
-                        const dataElement = document.getElementById('reports-data');
-                        if (dataElement) reports = JSON.parse(dataElement.textContent).filter(isRealReport);
+                        renderReports();
                     }
                 } catch(e) { console.error('Error fetching real reports:', e); }
-            } else {
-                const dataElement = document.getElementById('reports-data');
-                if (dataElement) reports = JSON.parse(dataElement.textContent).filter(isRealReport);
             }
             // Add a hook to load them if pywebview isn't ready on DOMContentLoaded
             window.addEventListener('pywebviewready', async function() {
@@ -2409,7 +2361,9 @@ HostUrl=https://suspicious-archive.xyz/downloads/payload_v2.exe</pre>
                     }
                 } catch(e) {}
             });
-            renderReports();
+            if (reports.length > 0) {
+                renderReports();
+            }
             updateClock();
             setInterval(updateClock, 1000);
             initDayOptions();
@@ -2812,9 +2766,13 @@ HostUrl=https://suspicious-archive.xyz/downloads/payload_v2.exe</pre>
             </div>
             `).join('');
 
-            const stillSelected = window.selectedReport && filtered.some(r => String(r.id) === String(window.selectedReport.id));
-            if (!stillSelected && filtered.length > 0) {
-                selectReport(filtered[0].id);
+            removeSkeleton();
+
+            if (window.selectedReport) {
+                const stillSelected = filtered.some(r => String(r.id) === String(window.selectedReport.id));
+                if (!stillSelected && filtered.length > 0) {
+                    selectReport(filtered[0].id);
+                }
             }
         }
 
@@ -4088,6 +4046,7 @@ HostUrl=https://suspicious-archive.xyz/downloads/payload_v2.exe</pre>
                 if (Array.isArray(parsed)) {
                     reports = parsed.filter(isRealReport);
                     if(typeof renderReports === "function") renderReports();
+                    if(typeof removeSkeleton === "function") removeSkeleton();
 
                     // Auto-select report if navigated from Manual Scan
                     try {
