@@ -400,7 +400,6 @@ In adherence to ISO/IEC 27037 disclosure requirements, the following six limitat
 
 - **Institution:** Anjuman Institute of Technology and Management (AITM), Bhatkal, Karnataka, India
 - **Department:** Department of Computer Science & Engineering
-- **Project Guide / Supervisor:** *[Project Guide / Faculty Advisor Name]*
 - **Developed By:** Prajwal Naik & Project Team
 
 ---
