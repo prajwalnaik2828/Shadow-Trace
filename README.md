@@ -354,10 +354,10 @@ reports/stego/20261107_193701_artifact_evidence_package.zip
 ## 11. Interface Previews & Demonstrations
 
 ### 1. Forensic Dashboard & Real-Time Telemetry
-https://github.com/prajwalnaik2828/Shadow-Trace/raw/main/ui/assets/videos/dashboard_demo.mp4
+![Forensic Dashboard Walkthrough](ui/assets/videos/dashboard_demo.gif)
 
 ### 2. Forensic Dossier & Executive Summary Report Generation
-https://github.com/prajwalnaik2828/Shadow-Trace/raw/main/ui/assets/videos/forensic_reports_demo.mp4
+![Forensic Reports Walkthrough](ui/assets/videos/forensic_reports_demo.gif)
 
 ### 3. Case Manager & Evidence Explorer
 *(Walkthrough video coming soon)*
