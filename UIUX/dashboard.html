@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SHADOW-TRACE | Forensic Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="audit_logger.js"></script>
+    <script src="dashboard_cache.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Geist:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#313030",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#27ae60",
+                        "on-primary-container": "#636565",
+                        "on-surface": "#f0f0f0",
+                        "on-secondary": "#00391a",
+                        "surface-variant": "#353534",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim": "#c6c6c7",
+                        "on-secondary-container": "#003115",
+                        "primary-fixed": "#e2e2e2",
+                        "tertiary-fixed": "#ffddb9",
+                        "on-tertiary": "#472a00",
+                        "surface-tint": "#c6c6c7",
+                        "on-surface-variant": "#888888",
+                        "on-primary-fixed": "#1a1c1c",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#00210c",
+                        "on-primary": "#2f3131",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-tertiary-container": "#8e5800",
+                        "inverse-primary": "#5d5f5f",
+                        "secondary-fixed-dim": "#27ae60",
+                        "on-secondary-fixed-variant": "#005228",
+                        "primary": "#ffffff",
+                        "surface-dim": "#111111",
+                        "primary-container": "#e2e2e2",
+                        "outline-variant": "#333333",
+                        "tertiary-fixed-dim": "#ffb961",
+                        "surface-container": "#1c1c1c",
+                        "tertiary": "#ffffff",
+                        "surface": "#111111",
+                        "surface-container-highest": "#242424",
+                        "surface-bright": "#3a3939",
+                        "on-background": "#f0f0f0",
+                        "outline": "#333333",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed": "#7efba4",
+                        "error": "#e74c3c",
+                        "warning": "#f39c12",
+                        "on-primary-fixed-variant": "#454747",
+                        "background": "#111111",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#27ae60",
+                        "tertiary-container": "#ffddb9",
+                        "on-tertiary-fixed-variant": "#663e00",
+                        "surface-container-low": "#1c1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "10px",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin-page": "40px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-md": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-sm": ["Geist"],
+                        "body-lg": ["Geist"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #111111;
+            color: #f0f0f0;
+            font-family: 'Geist', sans-serif;
+            overflow: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111111;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 10px;
+        }
+
+        .graph-bar {
+            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .graph-bar.highlight {
+            opacity: 1 !important;
+            box-shadow: 0 0 15px currentColor;
+            z-index: 10;
+        }
+
+        .active-filter {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+        }
+
+        .stego-badge {
+            background-color: #e74c3c;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .sidebar-link-active {
+            color: #ffffff;
+            background-color: #1c1c1c;
+            border-right: 2px solid #ffffff;
+        }
+
+        .y-axis-grid-line {
+            border-top: 1px solid rgba(51, 51, 51, 0.4);
+        }
+
+        #notification-panel {
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #notification-panel.open {
+            transform: translateX(0);
+        }
+
+        .glass-panel {
+            background-color: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        #queue-modal-overlay,
+        #calendar-modal-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #queue-modal-overlay.open,
+        #calendar-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #queue-modal {
+            transform: scale(0.9);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+
+        #calendar-modal {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+
+        #queue-modal-overlay.open #queue-modal {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        #calendar-modal-overlay.open #calendar-modal {
+            transform: scaleY(1);
+            opacity: 1;
+        }
+
+        #main-sidebar {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #main-sidebar.collapsed {
+            width: 64px;
+        }
+
+        #main-sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        #main-sidebar.collapsed .status-text {
+            display: none;
+        }
+
+        #main-sidebar.collapsed nav button {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        #main-sidebar.collapsed nav button span.material-symbols-outlined {
+            margin-right: 0;
+        }
+
+        #toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        #main-sidebar.collapsed #toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .graph-slide-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .graph-view-wrapper {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+        }
+
+        .calendar-day.selected {
+            background-color: #27ae60 !important;
+            color: #ffffff !important;
+            border-style: solid !important;
+        }
+
+        .calendar-day.today-highlight {
+            border: 2px dotted #27ae60 !important;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .dropdown-animate {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .dropdown-animate.open {
+            transform: scaleY(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .dropdown-trigger span.material-symbols-outlined {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-trigger.active span.material-symbols-outlined {
+            transform: rotate(180deg);
+        }
+    
+        #main-sidebar.collapsed .sidebar-monitoring span {
+            display: none !important;
+        }
+
+        #main-sidebar.collapsed .sidebar-monitoring {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+
+    </style>
+
+
+
+    <script>
+        (function() {
+            function syncAvatar() {
+                try {
+                    const p = localStorage.getItem('shadowtrace_profile_photo');
+                    if (p) {
+                        document.querySelectorAll('img[alt*="Examiner"]').forEach(function(img) {
+                            img.src = p;
+                        });
+                    }
+                } catch(e) {}
+            }
+            window.addEventListener('DOMContentLoaded', syncAvatar);
+            window.addEventListener('pywebviewready', syncAvatar);
+            syncAvatar();
+        })();
+    </script>
+
+</head>
+
+<body class="bg-background text-on-surface flex flex-col h-screen overflow-hidden">
+    
+
+    <!-- Modal Queue Overlay -->
+    <div class="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center p-stack-lg"
+        id="queue-modal-overlay" onclick="if(event.target===this) toggleQueueModal()">
+        <div class="w-full max-w-lg bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            id="queue-modal">
+            <div
+                class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">queue</span>
+                    <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Scan Queue</h3>
+                </div>
+                <button
+                    class="material-symbols-outlined text-on-surface-variant transition-colors bg-surface-container-highest p-1 rounded cursor-pointer hover:text-error"
+                    onclick="toggleQueueModal()">close</button>
+            </div>
+            <div class="p-stack-md h-[320px] overflow-y-auto custom-scrollbar space-y-2" id="queue-modal-list">
+                <div class="flex flex-col items-center justify-center py-12 opacity-60">
+                    <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-2">inbox</span>
+                    <span class="text-on-surface-variant font-code-sm text-[13px]">No files in queue</span>
+                </div>
+            </div>
+            <div class="p-stack-md border-t border-outline-variant bg-surface-container-low flex justify-end">
+
+            </div>
+        </div>
+    </div>
+    <!-- Calendar Modal Overlay -->
+    <div class="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-stack-lg"
+        id="calendar-modal-overlay">
+        <div class="w-full max-w-xs bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            id="calendar-modal">
+            <div
+                class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[20px]">calendar_month</span>
+                    <h3 class="font-bold text-primary text-sm uppercase tracking-tight">Timeline</h3>
+                </div>
+                <button
+                    class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                    onclick="toggleCalendarModal()">close</button>
+            </div>
+            <div class="p-4 bg-surface-container-lowest">
+                <div class="flex items-center justify-between mb-4">
+                    <button
+                        class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
+                        id="prev-month-btn">chevron_left</button>
+                    <div class="flex items-center gap-2">
+                        <!-- Month Dropdown -->
+                        <div class="relative">
+                            <button
+                                class="dropdown-trigger flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest border border-outline-variant hover:border-primary transition-all text-primary font-bold text-[11px] uppercase tracking-widest"
+                                id="month-dropdown-trigger" onclick="toggleDropdown('month')">
+                                <span class="" id="display-month">JUNE</span>
+                                <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+                            </button>
+                            <div class="absolute top-full left-0 mt-2 w-32 bg-surface-container-high border border-outline-variant rounded-lg shadow-2xl z-[120] dropdown-animate"
+                                id="month-selector-dropdown">
+                                <div class="p-1 max-h-48 overflow-y-auto custom-scrollbar" id="month-list-container">
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        JANUARY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        FEBRUARY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        MARCH</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        APRIL</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        MAY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        JUNE</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        JULY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        AUGUST</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        SEPTEMBER</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        OCTOBER</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        NOVEMBER</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        DECEMBER</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Year Dropdown -->
+                        <div class="relative">
+                            <button
+                                class="dropdown-trigger flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest border border-outline-variant hover:border-primary transition-all text-primary font-bold text-[11px] uppercase tracking-widest"
+                                id="year-dropdown-trigger" onclick="toggleDropdown('year')">
+                                <span class="" id="display-year">2026</span>
+                                <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+                            </button>
+                            <div class="absolute top-full left-0 mt-2 w-24 bg-surface-container-high border border-outline-variant rounded-lg shadow-2xl z-[120] dropdown-animate"
+                                id="year-selector-dropdown">
+                                <div class="p-1 max-h-48 overflow-y-auto custom-scrollbar" id="year-list-container">
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2020</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2021</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2022</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2023</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2024</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2025</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2026</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2027</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2028</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2029</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
+                        id="next-month-btn">chevron_right</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">SU</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">MO</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">TU</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">WE</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">TH</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">FR</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">SA</div>
+                </div>
+                <div class="grid grid-cols-7 gap-1" id="calendar-grid"></div>
+            </div>
+            <div
+                class="p-stack-md border-t border-outline-variant bg-surface-container-low flex justify-between items-center">
+                <button
+                    class="text-[10px] font-code-sm text-on-surface-variant hover:text-primary transition-colors underline uppercase"
+                    onclick="selectToday()">Go to today</button>
+                <button
+                    class="px-4 py-1.5 bg-secondary text-white rounded font-code-sm text-[11px] uppercase tracking-widest hover:opacity-90 transition-all"
+                    onclick="applyCalendarSelection()">Apply</button>
+            </div>
+        </div>
+    </div>
+    <!-- Full Width Top Bar -->
+    <header
+        class="fixed top-0 left-0 right-0 h-[60px] bg-surface border-b border-outline-variant flex justify-between items-center px-stack-lg z-50">
+        <div class="flex items-center gap-4">
+            <div class="flex flex-col justify-center">
+                <span
+                    class="text-primary font-bold tracking-tighter leading-none whitespace-nowrap text-[18px]">SHADOW-TRACE</span>
+                <span
+                    class="font-code-sm text-on-surface-variant uppercase tracking-widest mt-0.5 text-[10px]">v1.0.0</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-stack-sm">
+                <img alt="Examiner Profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwkAdo1ZlEWjsUFV9ZC_YE8YqmEARPZOUWFnevxX7v0CbUVGDfCaQhB6W9ae9_hoOvdYQ0ZRcR3BpyDH5uW-z8tqSLEYzd8BuS33fagIzPsxRJYXGPjwWLKWh9ekur6iDfBjoukL0YvG-ju_XNheeZi6xnWtC2mqcBrM8RHMaphl7JC6hYPeWep-1Wzo7cAmdRxVue8S9AM7oAQbjK5UwchanWJ2ebMzAeWMImuqvaROhaNBfkfLYa_tOf2NrtjhUFec6ECar6U8YCOQ">
+            </div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <div class="font-code-sm text-on-surface-variant text-[12px] min-w-[160px] text-right px-2 rounded border border-warning/30 text-primary"
+                id="clock">04 JUL 2026 17:43:17</div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 text-primary relative rounded-full"
+                onclick="toggleNotifications(event)" title="notifications">notifications<span
+                    id="notification-bell-dot" class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span></button>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded-full text-primary"
+                onclick="lockWorkstation()" title="lock app">lock</button>
+            <div class="flex items-center gap-2 ml-4 border-l border-outline-variant pl-4">
+                <button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="minimize">minimize</button>
+                <button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="maximize">check_box_outline_blank</button>
+                <button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-error hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="close">close</button>
+            </div>
+        </div>
+    </header>
+    <div class="flex flex-1 mt-[60px] overflow-hidden">
+        <!-- Sidebar -->
+        <aside
+            class="w-[260px] bg-surface border-r border-outline-variant flex flex-col shrink-0 overflow-hidden relative"
+            id="main-sidebar">
+            <script>if(localStorage.getItem('sidebar_collapsed') === 'true') document.getElementById('main-sidebar').classList.add('collapsed');</script>
+            <!-- Sidebar Toggle Button -->
+            <button
+                class="absolute right-2 top-2 z-10 w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-highest border border-outline-variant text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                onclick="toggleSidebar()">
+                <span class="material-symbols-outlined text-[20px]" id="toggle-icon">chevron_left</span>
+            </button>
+            <!-- Sidebar Navigation -->
+            <nav class="flex-1 py-stack-md mt-10">
+    <button onclick="window.location.href='dashboard.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-primary bg-surface-container-high transition-colors text-body-lg border-primary border-r-4 cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">dashboard</span>
+        <span class="sidebar-text whitespace-nowrap font-medium">Dashboard</span>
+    </button>
+    <button onclick="window.location.href='manual_scan.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">search_check</span>
+        <span class="sidebar-text whitespace-nowrap">Manual Scan</span>
+    </button>
+    <button onclick="window.location.href='case_manager.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">folder_managed</span>
+        <span class="sidebar-text whitespace-nowrap">Case Manager</span>
+    </button>
+    <button onclick="window.location.href='qurantine_files.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">gpp_maybe</span>
+        <span class="sidebar-text whitespace-nowrap">Quarantined Files</span>
+    </button>
+    <button onclick="window.location.href='user_profile.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">person</span>
+        <span class="sidebar-text whitespace-nowrap">User Profile</span>
+    </button>
+    <button onclick="window.location.href='system_info.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">info</span>
+        <span class="sidebar-text whitespace-nowrap">System Info</span>
+    </button>
+    <button onclick="window.location.href='settings.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+        <span class="material-symbols-outlined text-[24px] shrink-0">settings</span>
+        <span class="sidebar-text whitespace-nowrap">Settings</span>
+    </button>
+</nav>
+            <div class="mt-auto p-stack-lg border-t border-outline-variant sidebar-monitoring">
+                <div class="flex items-center gap-2 justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-error animate-pulse shadow-[0_0_12px_rgba(231,76,60,0.6)] shrink-0">
+                    </div>
+                    <span class="font-label-caps uppercase tracking-widest text-error text-[13px] sidebar-text">Monitoring Off</span>
+                </div>
+            </div>
+        </aside>
+        <main class="flex-1 flex flex-col h-full overflow-x-hidden relative">
+            <div id="initial-sidebar-skeleton" class="fixed inset-y-0 left-0 w-[260px] z-[105] bg-surface border-r border-outline-variant flex flex-col transition-opacity duration-500">
+                <div class="h-[60px] border-b border-outline-variant flex items-center px-6 bg-surface-container-low"><div class="w-32 h-6 bg-surface-container-high animate-pulse rounded"></div></div>
+                <div class="p-4 flex flex-col gap-2 mt-4">
+                    <div class="w-full h-12 bg-surface-container-highest animate-pulse rounded mb-4"></div>
+                    <div class="w-full h-12 bg-surface-container-high animate-pulse rounded"></div>
+                    <div class="w-full h-12 bg-surface-container-high animate-pulse rounded"></div>
+                    <div class="w-full h-12 bg-surface-container-high animate-pulse rounded mt-auto"></div>
+                </div>
+            </div>
+            <div id="page-skeleton" class="absolute inset-0 z-[90] bg-background flex flex-col transition-opacity duration-500">
+                <div class="w-full p-stack-lg flex gap-stack-lg h-full">
+                    <div class="w-2/3 space-y-stack-lg">
+                        <div class="h-24 bg-surface-container rounded-lg animate-pulse"></div>
+                        <div class="h-[300px] bg-surface-container rounded-lg animate-pulse"></div>
+                        <div class="h-64 bg-surface-container rounded-lg animate-pulse"></div>
+                    </div>
+                    <div class="w-1/3 space-y-stack-lg">
+                        <div class="h-48 bg-surface-container rounded-lg animate-pulse"></div>
+                        <div class="h-full bg-surface-container rounded-lg animate-pulse"></div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                if (sessionStorage.getItem('app_initialized')) {
+                    const sb = document.getElementById('initial-sidebar-skeleton');
+                    if(sb) sb.remove();
+                } else {
+                    sessionStorage.setItem('app_initialized', 'true');
+                }
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const pageSk = document.getElementById('page-skeleton');
+                        const sideSk = document.getElementById('initial-sidebar-skeleton');
+                        if (pageSk) { pageSk.style.opacity = '0'; setTimeout(() => pageSk.remove(), 500); }
+                        if (sideSk) { sideSk.style.opacity = '0'; setTimeout(() => sideSk.remove(), 500); }
+                    }, 400);
+                });
+            </script>
+            <div class="w-full p-stack-lg flex gap-stack-lg h-full">
+                <!-- Left Side Content -->
+                <div class="w-2/3 space-y-stack-lg h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar pr-2">
+                    <div class="p-4 rounded-lg flex items-center justify-between shadow-lg sticky top-0 z-20 bg-surface-container border border-outline-variant">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-surface-container-highest p-2 rounded-full border border-outline-variant">
+                                <span class="material-symbols-outlined text-on-surface-variant text-[24px]">verified_user</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <h3 class="text-on-surface-variant font-bold text-[18px] leading-tight uppercase tracking-tight">
+                                    No Threats Detected</h3>
+                                <p class="text-on-surface-variant/70 text-[12px] font-code-sm">
+                                    All recent scans are clean.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-stack-md mt-stack-lg">
+                        <div
+                            class="bg-surface-container border border-outline-variant rounded-lg p-stack-md border-l-4 border-l-primary flex flex-col gap-unit">
+                            <span
+                                class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-widest">Total
+                                Scanned</span>
+                            <span id="kpi-total" class="text-display-lg font-display-lg text-primary">84</span>
+                        </div>
+                        <div
+                            class="bg-surface-container border border-outline-variant rounded-lg p-stack-md border-l-4 border-l-secondary flex flex-col gap-unit">
+                            <span class="font-label-caps text-secondary text-[11px] uppercase tracking-widest">Clean
+                                Files</span>
+                            <span id="kpi-clean" class="text-display-lg font-display-lg text-secondary">63</span>
+                        </div>
+                        <div
+                            class="bg-surface-container border border-outline-variant rounded-lg p-stack-md border-l-4 border-l-warning flex flex-col gap-unit">
+                            <span
+                                class="font-label-caps text-warning text-[11px] uppercase tracking-widest">Suspicious</span>
+                            <span id="kpi-suspicious" class="text-display-lg font-display-lg text-warning">10</span>
+                        </div>
+                        <div
+                            class="bg-surface-container border border-outline-variant rounded-lg p-stack-md border-l-4 border-l-error flex flex-col gap-unit">
+                            <span class="font-label-caps text-error text-[11px] uppercase tracking-widest">Stego
+                                Detected</span>
+                            <span id="kpi-stego" class="text-display-lg font-display-lg text-error">11</span>
+                        </div>
+                    </section>
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg p-stack-md border-l-4 border-l-error flex items-center justify-between">
+                        <div class="flex flex-col gap-unit">
+                            <span
+                                class="font-label-caps text-on-surface text-[13px] uppercase tracking-widest">Quarantined
+                                Files</span>
+                            <div class="flex items-baseline gap-2">
+                                <span id="dashboard-q-count" class="text-display-lg font-display-lg text-primary">17</span>
+                                <span class="text-on-surface-variant text-body-md">files currently quarantined</span>
+                            </div>
+                            <span id="dashboard-q-last" class="text-on-surface-variant text-[10px] font-code-sm uppercase tracking-widest">Last added: 1 days ago</span>
+                        </div>
+                        <button
+                            class="px-4 py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary transition-all font-code-sm text-[11px] uppercase tracking-widest cursor-pointer active:scale-95 active:bg-surface-container-high"
+                            onclick="document.getElementById('quarantine-modal-overlay').classList.remove('opacity-0', 'pointer-events-none'); document.getElementById('quarantine-modal').classList.remove('scale-95');">
+                            View Quarantine
+                        </button>
+                    </section>
+                    <!-- Scan History Graph Card -->
+                    <section class="bg-surface-container border border-[#444444] rounded-lg p-stack-lg">
+                        <div class="flex flex-col justify-between items-start gap-stack-md mb-stack-md w-full">
+                            <div class="flex justify-between items-center w-full">
+                                <h2 class="text-[24px] font-bold text-primary font-display-lg">Scan History</h2>
+                            </div>
+                            <div
+                                class="flex items-center bg-surface-container-highest/50 border border-outline-variant rounded-lg p-1 mt-2 justify-center mx-auto">
+                                <button
+                                    class="material-symbols-outlined text-[20px] text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-1"
+                                    onclick="navigateTimePeriod('prev')">chevron_left</button>
+                                <div class="flex-1 flex justify-center gap-2 px-4">
+                                    <button
+                                        class="px-stack-md py-1 border border-outline-variant rounded font-code-sm text-[12px] bg-surface-container-highest text-on-surface hover:bg-surface-bright transition-all active-filter"
+                                        id="filter-clean" onclick="updateGraph('clean')">Clean</button>
+                                    <button
+                                        class="px-stack-md py-1 border border-outline-variant rounded font-code-sm text-[12px] bg-surface-container-highest text-on-surface hover:bg-surface-bright transition-all"
+                                        id="filter-suspicious" onclick="updateGraph('suspicious')">Suspicious</button>
+                                    <button
+                                        class="px-stack-md py-1 border border-outline-variant rounded font-code-sm text-[12px] bg-surface-container-highest text-on-surface hover:bg-surface-bright transition-all"
+                                        id="filter-stego" onclick="updateGraph('stego')">Stego</button>
+                                </div>
+                                <button
+                                    class="material-symbols-outlined text-[20px] text-on-surface-variant hover:text-primary transition-colors cursor-pointer p-1"
+                                    onclick="navigateTimePeriod('next')">chevron_right</button>
+                            </div>
+                        </div>
+                        <div class="relative flex flex-col mt-stack-lg graph-slide-container mb-stack-md">
+                            <div class="flex gap-4">
+                                <!-- Y-Axis -->
+                                <div
+                                    class="flex flex-col justify-between h-[300px] text-[10px] font-code-sm text-on-surface-variant text-right w-8">
+                                    <span class="">100</span><span class="">80</span><span class="">60</span><span
+                                        class="">40</span><span class="">20</span><span class="">0</span>
+                                </div>
+                                <!-- Graph Viewport -->
+                                <div class="relative flex-1 h-[300px] border-l border-b border-outline-variant mb-stack-md overflow-hidden"
+                                    id="graph-viewport">
+                                    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between">
+                                        <div class="y-axis-grid-line w-full h-0"></div>
+                                        <div class="y-axis-grid-line w-full h-0"></div>
+                                        <div class="y-axis-grid-line w-full h-0"></div>
+                                        <div class="y-axis-grid-line w-full h-0"></div>
+                                        <div class="y-axis-grid-line w-full h-0"></div>
+                                        <div class="y-axis-grid-line w-full h-0"></div>
+                                    </div>
+                                    <!-- Wrapper for sliding bars -->
+                                    <div class="graph-view-wrapper absolute inset-0" id="graph-view-wrapper">
+                                        <div class="graph-view absolute inset-0 flex items-end justify-between w-full h-full gap-2 px-2"
+                                            id="graph-container">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Wrapper for sliding x-axis -->
+                            <div class="relative h-4 overflow-hidden ml-12 pr-2" id="x-axis-viewport">
+                                <div class="graph-view-wrapper flex justify-between text-[10px] font-code-sm text-on-surface-variant h-full"
+                                    id="x-axis-container-wrapper">
+                                    <div class="flex w-full h-full justify-between" id="x-axis-container"><span
+                                            class="flex-1 text-center truncate px-1">01</span><span
+                                            class="flex-1 text-center truncate px-1">02</span><span
+                                            class="flex-1 text-center truncate px-1">03</span><span
+                                            class="flex-1 text-center truncate px-1">04</span><span
+                                            class="flex-1 text-center truncate px-1">05</span><span
+                                            class="flex-1 text-center truncate px-1">06</span><span
+                                            class="flex-1 text-center truncate px-1">07</span><span
+                                            class="flex-1 text-center truncate px-1">08</span><span
+                                            class="flex-1 text-center truncate px-1">09</span><span
+                                            class="flex-1 text-center truncate px-1">10</span><span
+                                            class="flex-1 text-center truncate px-1">11</span><span
+                                            class="flex-1 text-center truncate px-1">12</span><span
+                                            class="flex-1 text-center truncate px-1">13</span><span
+                                            class="flex-1 text-center truncate px-1">14</span><span
+                                            class="flex-1 text-center truncate px-1">15</span><span
+                                            class="flex-1 text-center truncate px-1">16</span><span
+                                            class="flex-1 text-center truncate px-1 text-primary font-bold">17</span><span
+                                            class="flex-1 text-center truncate px-1">18</span><span
+                                            class="flex-1 text-center truncate px-1">19</span><span
+                                            class="flex-1 text-center truncate px-1">20</span><span
+                                            class="flex-1 text-center truncate px-1">21</span><span
+                                            class="flex-1 text-center truncate px-1">22</span><span
+                                            class="flex-1 text-center truncate px-1">23</span><span
+                                            class="flex-1 text-center truncate px-1">24</span><span
+                                            class="flex-1 text-center truncate px-1">25</span><span
+                                            class="flex-1 text-center truncate px-1">26</span><span
+                                            class="flex-1 text-center truncate px-1">27</span><span
+                                            class="flex-1 text-center truncate px-1">28</span><span
+                                            class="flex-1 text-center truncate px-1">29</span><span
+                                            class="flex-1 text-center truncate px-1">30</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-surface-container-lowest border border-[#444444] rounded p-stack-sm min-h-[48px] flex items-center mt-stack-md"
+                            id="graph-info">
+                            <div class="flex gap-stack-md w-full items-center">
+                                <span
+                                    class="material-symbols-outlined text-on-surface-variant hover:text-secondary transition-colors cursor-pointer p-1 rounded hover:bg-surface-container-highest"
+                                    onclick="toggleCalendarModal()" title="Select range">calendar_month</span>
+                                <div class="flex-1">
+                                    <p class="text-on-surface font-bold text-[12px]" id="forensic-summary-title">
+                                        Forensic Summary for 17 JUN 2026</p>
+                                    <p class="text-on-surface-variant text-[11px]" id="current-range-display">85 Files
+                                        Analyzed Ã¢â‚¬Â¢ Verdict: CLEAN</p>
+                                </div>
+                                <span class="text-[10px] font-code-sm text-on-surface-variant" id="period-meta-id">ID:
+                                    0x7WKS-02</span>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Recent Scans Card -->
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg p-stack-lg flex flex-col gap-stack-md border-secondary/50 shadow-[0_0_12px_rgba(39,174,96,0.2)]">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-[10px] font-label-caps uppercase tracking-[1px] font-bold text-white">
+                                Today's Forensic Sessions (6)</h4>
+                        </div>
+                        <div class="grid grid-cols-6 gap-2 mt-2">
+                            <div class="flex flex-col gap-2 group cursor-pointer">
+                                <div
+                                    class="h-10 bg-secondary/10 border border-secondary/30 rounded-sm flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                                </div>
+                                <div class="flex flex-col items-center"><span
+                                        class="text-[10px] font-code-sm text-primary">09:00</span><span
+                                        class="text-[8px] font-label-caps text-secondary uppercase">Clean</span></div>
+                            </div>
+                            <div class="flex flex-col gap-2 group cursor-pointer">
+                                <div
+                                    class="h-10 bg-secondary/10 border border-secondary/30 rounded-sm flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                                </div>
+                                <div class="flex flex-col items-center"><span
+                                        class="text-[10px] font-code-sm text-primary">10:30</span><span
+                                        class="text-[8px] font-label-caps text-secondary uppercase">Clean</span></div>
+                            </div>
+                            <div class="flex flex-col gap-2 group cursor-pointer">
+                                <div
+                                    class="h-10 bg-error/10 border border-error/30 rounded-sm flex items-center justify-center group-hover:bg-error/20 transition-colors">
+                                    <span class="material-symbols-outlined text-error text-[18px]">report</span></div>
+                                <div class="flex flex-col items-center"><span
+                                        class="text-[10px] font-code-sm text-primary">11:15</span><span
+                                        class="text-[8px] font-label-caps text-error uppercase">Threat</span></div>
+                            </div>
+                            <div class="flex flex-col gap-2 group cursor-pointer">
+                                <div
+                                    class="h-10 bg-warning/10 border border-warning/30 rounded-sm flex items-center justify-center group-hover:bg-warning/20 transition-colors">
+                                    <span class="material-symbols-outlined text-warning text-[18px]">warning</span>
+                                </div>
+                                <div class="flex flex-col items-center"><span
+                                        class="text-[10px] font-code-sm text-primary">13:45</span><span
+                                        class="text-[8px] font-label-caps text-warning uppercase">Suspicious</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2 group cursor-pointer">
+                                <div
+                                    class="h-10 bg-secondary/10 border border-secondary/30 rounded-sm flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                                </div>
+                                <div class="flex flex-col items-center"><span
+                                        class="text-[10px] font-code-sm text-primary">15:00</span><span
+                                        class="text-[8px] font-label-caps text-secondary uppercase">Clean</span></div>
+                            </div>
+                            <div class="flex flex-col gap-2 group cursor-pointer">
+                                <div
+                                    class="h-10 bg-secondary/10 border border-secondary/30 rounded-sm flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                                </div>
+                                <div class="flex flex-col items-center"><span
+                                        class="text-[10px] font-code-sm text-primary">16:30</span><span
+                                        class="text-[8px] font-label-caps text-secondary uppercase">Clean</span></div>
+                            </div>
+                        </div>
+                    </section>
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg overflow-hidden flex flex-col">
+                        <div class="p-stack-lg border-b border-outline-variant">
+                            <h2 class="font-bold text-primary text-2xl font-display-lg">Recent Scans</h2>
+                            <p class="text-on-surface-variant text-body-lg">Displaying analysis results for the last 15
+                                forensic scan operations.</p>
+                        </div>
+                        <div class="custom-scrollbar overflow-y-auto h-[330px]">
+                            <table class="w-full text-left font-code-sm text-[13px]">
+                                <thead
+                                    class="bg-surface-container-highest sticky top-0 border-b border-outline-variant z-10">
+                                    <tr>
+                                        <th
+                                            class="px-stack-lg py-3 font-medium text-on-surface-variant w-12 text-center">
+                                            Status</th>
+                                        <th class="px-stack-lg py-3 font-medium text-on-surface-variant">Filename</th>
+                                        <th class="px-stack-lg py-3 font-medium text-on-surface-variant">Timestamp</th>
+                                        <th class="px-stack-lg py-3 font-medium text-on-surface-variant text-right">
+                                            Verdict</th>
+                                        <th class="px-stack-lg py-3 font-medium text-on-surface-variant text-right">
+                                            Report</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-outline-variant" id="reports-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+                <!-- Right Side Content -->
+                <div class="w-1/3 h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar pr-2">
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg p-stack-lg flex flex-col gap-stack-lg">
+                        <div>
+                            <h2 class="text-primary font-bold mb-stack-sm text-2xl font-display-lg">Current Scan</h2>
+                            <button
+                                class="flex items-center gap-2 text-on-surface-variant font-code-sm text-[12px] bg-surface-container-high border border-outline-variant rounded-lg px-2 py-1 hover:bg-surface-bright hover:text-primary transition-colors cursor-pointer"
+                                onclick="toggleQueueModal()">
+                                <span class="material-symbols-outlined text-[16px]">list_alt</span>
+                                <span id="scan-queue-count">Queue: 0 files</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Idle State -->
+                        <div id="scan-idle-state" class="flex flex-col items-center justify-center py-10 opacity-60">
+                            <span class="material-symbols-outlined text-[64px] text-on-surface-variant mb-4">search_off</span>
+                            <span class="text-on-surface-variant font-code-sm text-[14px]">No files in current scan</span>
+                        </div>
+
+                        <!-- Active State -->
+                        <div id="scan-active-state" class="hidden flex flex-col gap-4">
+                            <div class="flex flex-col">
+                                <span class="font-label-caps text-on-surface-variant text-[10px] uppercase tracking-widest">Current File</span>
+                                <span id="scan-current-filename" class="font-code-sm text-primary text-[13px] truncate mt-1">filename.ext</span>
+                            </div>
+
+                            <div class="flex flex-col gap-3 py-2">
+                                <div id="stage-row-1" class="flex items-center gap-stack-md">
+                                    <span id="stage-icon-1" class="material-symbols-outlined text-[#27ae60] text-[20px]">check_circle</span>
+                                    <span id="stage-text-1" class="text-on-surface text-body-md">Initialization</span>
+                                </div>
+                                <div id="stage-row-2" class="flex items-center gap-stack-md">
+                                    <span id="stage-icon-2" class="material-symbols-outlined text-primary animate-spin text-[20px]">progress_activity</span>
+                                    <span id="stage-text-2" class="text-primary font-medium text-body-md">Signature Analysis</span>
+                                </div>
+                                <div id="stage-row-3" class="flex items-center gap-stack-md">
+                                    <span id="stage-icon-3" class="material-symbols-outlined text-on-surface-variant text-[20px]">radio_button_unchecked</span>
+                                    <span id="stage-text-3" class="text-on-surface-variant text-body-md">Heuristic Scanning</span>
+                                </div>
+                                <div id="stage-row-4" class="flex items-center gap-stack-md">
+                                    <span id="stage-icon-4" class="material-symbols-outlined text-on-surface-variant text-[20px]">radio_button_unchecked</span>
+                                    <span id="stage-text-4" class="text-on-surface-variant text-body-md">Steganography Detection</span>
+                                </div>
+                                <div id="stage-row-5" class="flex items-center gap-stack-md">
+                                    <span id="stage-icon-5" class="material-symbols-outlined text-on-surface-variant text-[20px]">radio_button_unchecked</span>
+                                    <span id="stage-text-5" class="text-on-surface-variant text-body-md">Report Generation</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-2">
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="text-on-surface-variant font-label-caps text-[10px]">PROGRESS</span>
+                                    <span id="scan-progress-percent" class="text-secondary font-code-sm text-[12px]">0%</span>
+                                </div>
+                                <div class="w-full h-2 bg-outline-variant rounded-full overflow-hidden">
+                                    <div id="scan-progress-bar" class="h-full bg-secondary transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg p-stack-lg flex flex-col gap-stack-md mt-stack-lg">
+                        <h2 class="text-primary font-bold mb-stack-sm uppercase text-lg font-semibold">Pending Actions
+                        </h2>
+                        <div class="flex flex-col gap-3">
+                            <button
+                                class="flex items-center justify-between p-3 rounded bg-surface-container-high border border-outline-variant hover:bg-surface-bright hover:border-primary transition-all group cursor-pointer text-left">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-error text-[20px]">report</span>
+                                    <span class="text-on-surface text-body-md">Unreviewed threat reports</span>
+                                </div>
+                                <span class="font-code-sm text-error font-bold">2</span>
+                            </button>
+                            <button
+                                class="flex items-center justify-between p-3 rounded bg-surface-container-high border border-outline-variant hover:bg-surface-bright hover:border-primary transition-all group cursor-pointer text-left">
+                                <div class="flex items-center gap-3"><span
+                                        class="material-symbols-outlined text-secondary text-[20px]">queue</span><span
+                                        class="text-on-surface text-body-md">Reprocess queue</span></div><span
+                                    class="font-code-sm text-secondary font-bold">1</span>
+                            </button>
+                            <button
+                                class="flex items-center justify-between p-3 rounded bg-surface-container-high border border-outline-variant hover:bg-surface-bright hover:border-primary transition-all group cursor-pointer text-left">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="material-symbols-outlined text-warning text-[20px]">folder_managed</span>
+                                    <span class="text-on-surface text-body-md">Cases awaiting review</span>
+                                </div>
+                                <span class="font-code-sm text-warning font-bold">3</span>
+                            </button>
+                            <button
+                                class="flex items-center justify-between p-3 rounded bg-surface-container-high border border-outline-variant hover:bg-surface-bright hover:border-primary transition-all group cursor-pointer text-left">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="material-symbols-outlined text-on-surface-variant text-[20px]">sticky_note_2</span>
+                                    <span class="text-on-surface text-body-md">Notes flagged for action</span>
+                                </div>
+                                <span class="font-code-sm text-on-surface-variant font-bold">1</span>
+                            </button>
+                        </div>
+                    </section>
+                    <!-- Health Metrics -->
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg p-stack-lg flex flex-col gap-stack-md mt-stack-lg">
+                        <h2 class="text-primary font-bold mb-stack-sm text-2xl font-display-lg">System Health</h2>
+                        <div class="flex flex-row justify-center py-4">
+                            <div class="relative w-32 h-32">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" fill="transparent" r="40" stroke="#333333" stroke-width="8">
+                                    </circle>
+                                    <circle id="health-circle" class="transition-all duration-700" cx="50" cy="50" fill="transparent" r="40" stroke="#27ae60"
+                                        stroke-dasharray="251.2" stroke-dashoffset="0" stroke-linecap="round"
+                                        stroke-width="8"></circle>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                    <span id="health-percent" class="text-2xl font-bold text-primary font-display-lg">100%</span>
+                                    <span id="health-status-label" class="text-[10px] text-on-surface-variant font-label-caps">OPTIMAL</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="health-cards-container" class="flex flex-col gap-3 mt-2 border-t border-outline-variant pt-4 items-center w-full">
+                            <div
+                                class="flex items-start gap-3 p-4 rounded-lg bg-[#27ae60]/10 border-l-4 border-l-[#27ae60] w-full justify-start">
+                                <span
+                                    class="material-symbols-outlined text-[#27ae60] text-[18px] shrink-0">check_circle</span>
+                                <div class="flex flex-col">
+                                    <span class="text-on-surface text-[12px] font-medium">Evaluating system health...</span>
+                                    <span class="text-on-surface-variant text-[10px] font-code-sm">Checking modules & sensors</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Disk Space -->
+                    <section
+                        class="bg-surface-container border border-outline-variant rounded-lg p-stack-lg flex flex-col gap-stack-md mt-stack-lg">
+                        <h2 class="text-primary font-bold mb-stack-sm text-2xl font-display-lg">Disk Space</h2>
+                        <div class="flex flex-row justify-center py-4">
+                            <div class="relative w-32 h-32"><svg class="w-full h-full transform -rotate-90"
+                                    viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" fill="transparent" r="40" stroke="#333333" stroke-width="8">
+                                    </circle>
+                                    <circle class="" cx="50" cy="50" fill="transparent" r="40" stroke="#f97316"
+                                        stroke-dasharray="251.2" stroke-dashoffset="100.48" stroke-linecap="round"
+                                        stroke-width="8"></circle>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center flex-col"><span
+                                        class="text-2xl font-bold text-primary font-display-lg"
+                                        style="color: white;">60%</span><span
+                                        class="text-[10px] text-on-surface-variant font-label-caps">USED</span></div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 mt-2 border-t border-outline-variant pt-4"><span
+                                class="text-on-surface text-[14px] font-medium">1.2 TB / 2.0 TB</span><span
+                                class="text-on-surface-variant text-[10px] font-code-sm uppercase tracking-widest">Storage
+                                Capacity</span></div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- Notification Panel -->
+        <!-- Notification Panel -->
+    <div class="fixed right-0 top-0 h-full w-[380px] glass-panel border-l border-outline-variant z-[60] flex flex-col shadow-2xl"
+        id="notification-panel">
+        <div
+            class="p-stack-lg border-b border-outline-variant flex justify-between items-center bg-surface-container/50">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">notifications_active</span>
+                <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Notifications</h3>
+            </div>
+            <button
+                class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors bg-surface-container-highest p-1 rounded cursor-pointer"
+                onclick="toggleNotifications(event)">close</button>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-stack-md space-y-3" id="notifications-list">
+            <div class="flex items-center justify-center py-12 text-on-surface-variant/40">
+                <span class="material-symbols-outlined animate-spin text-2xl mr-2">progress_activity</span>
+                <span class="font-data-mono text-xs">Loading alerts...</span>
+            </div>
+        </div>
+        <div class="p-stack-md border-t border-outline-variant">
+            <button
+                onclick="clearAllNotifications()"
+                class="w-full py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary transition-all font-code-sm text-[12px] uppercase tracking-widest cursor-pointer hover:bg-surface-container">Clear
+                All History</button>
+        </div>
+    </div>
+    <script>
+        // State management
+        window.state = {};
+        const state = window.state;
+        const nowInitial = new Date();
+        Object.assign(state, {
+            currentCalDate: new Date(nowInitial.getFullYear(), nowInitial.getMonth(), nowInitial.getDate()),
+            selectedCalDate: new Date(nowInitial.getFullYear(), nowInitial.getMonth(), nowInitial.getDate()),
+            today: new Date(nowInitial.getFullYear(), nowInitial.getMonth(), nowInitial.getDate()),
+            currentFilter: 'clean',
+            graphData: {},
+            isNavigating: false
+        });
+
+        // Initialize clean empty month data structure
+        function getEmptyMonthData(year, month) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            return {
+                clean: new Array(daysInMonth).fill(0),
+                suspicious: new Array(daysInMonth).fill(0),
+                stego: new Array(daysInMonth).fill(0)
+            };
+        }
+
+        // Prefill current month with clean data
+        state.graphData[`${state.currentCalDate.getFullYear()}-${state.currentCalDate.getMonth()}`] = getEmptyMonthData(state.currentCalDate.getFullYear(), state.currentCalDate.getMonth());
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+            }
+        }
+
+        // Monitoring Toggle
+        function toggleMonitoring() {
+            if (typeof window.syncSidebarMonitoringStatus === 'function') {
+                window.syncSidebarMonitoringStatus();
+            }
+        }
+
+        // Modal Toggles
+        function toggleQueueModal() {
+            document.getElementById('queue-modal-overlay').classList.toggle('open');
+        }
+
+        function toggleCalendarModal() {
+            const overlay = document.getElementById('calendar-modal-overlay');
+            overlay.classList.toggle('open');
+            if (overlay.classList.contains('open')) renderCalendar();
+            else closeAllDropdowns();
+        }
+
+        function toggleNotifications(e) {
+            if (typeof window.auditToggleNotifications === 'function') {
+                return window.auditToggleNotifications(e);
+            }
+            const panel = document.getElementById('notification-panel');
+            if (panel) panel.classList.toggle('open');
+        }
+
+        // Dropdowns
+        const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        const years = Array.from({ length: 10 }, (_, i) => 2020 + i);
+
+        function toggleDropdown(type) {
+            const dropdown = document.getElementById(`${type}-selector-dropdown`);
+            const trigger = document.getElementById(`${type}-dropdown-trigger`);
+            const isOpen = dropdown.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                trigger.classList.add('active');
+            }
+        }
+
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown-animate').forEach(d => d.classList.remove('open'));
+            document.querySelectorAll('.dropdown-trigger').forEach(t => t.classList.remove('active'));
+        }
+
+        function populateDropdowns() {
+            const monthContainer = document.getElementById('month-list-container');
+            const yearContainer = document.getElementById('year-list-container');
+
+            monthContainer.innerHTML = '';
+            yearContainer.innerHTML = '';
+
+            months.forEach((m, idx) => {
+                const div = document.createElement('div');
+                div.className = "py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest";
+                div.textContent = m;
+                div.onclick = () => {
+                    state.currentCalDate.setMonth(idx);
+                    renderCalendar();
+                    closeAllDropdowns();
+                };
+                monthContainer.appendChild(div);
+            });
+
+            years.forEach(y => {
+                const div = document.createElement('div');
+                div.className = "py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest";
+                div.textContent = y;
+                div.onclick = () => {
+                    state.currentCalDate.setFullYear(y);
+                    renderCalendar();
+                    closeAllDropdowns();
+                };
+                yearContainer.appendChild(div);
+            });
+        }
+
+        // Calendar logic
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            const year = state.currentCalDate.getFullYear();
+            const month = state.currentCalDate.getMonth();
+
+            document.getElementById('display-month').textContent = months[month];
+            document.getElementById('display-year').textContent = year;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = prevMonthDays - i;
+                grid.appendChild(day);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                const isSelected = state.selectedCalDate.getDate() === i && state.selectedCalDate.getMonth() === month && state.selectedCalDate.getFullYear() === year;
+                const isToday = state.today.getDate() === i && state.today.getMonth() === month && state.today.getFullYear() === year;
+
+                day.className = `calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today-highlight' : ''}`;
+                day.textContent = i;
+                day.onclick = () => {
+                    state.selectedCalDate = new Date(year, month, i);
+                    renderCalendar();
+                };
+                grid.appendChild(day);
+            }
+        }
+
+        function selectToday() {
+            state.currentCalDate = new Date(state.today);
+            state.selectedCalDate = new Date(state.today);
+            renderCalendar();
+        }
+
+        function applyCalendarSelection() {
+            if (state.currentCalDate.getMonth() !== state.selectedCalDate.getMonth() || state.currentCalDate.getFullYear() !== state.selectedCalDate.getFullYear()) {
+                state.selectedCalDate = new Date(state.currentCalDate.getFullYear(), state.currentCalDate.getMonth(), 1);
+            }
+            const key = `${state.selectedCalDate.getFullYear()}-${state.selectedCalDate.getMonth()}`;
+            if (!state.graphData[key]) {
+                const daysInMonth = new Date(state.selectedCalDate.getFullYear(), state.selectedCalDate.getMonth() + 1, 0).getDate();
+                state.graphData[key] = { clean: new Array(daysInMonth).fill(0), suspicious: new Array(daysInMonth).fill(0), stego: new Array(daysInMonth).fill(0) };
+            }
+            updateGraphUI();
+            toggleCalendarModal();
+        }
+
+        // Graph UI update with sliding support
+        function updateGraphUI(direction = null) {
+            const key = `${state.selectedCalDate.getFullYear()}-${state.selectedCalDate.getMonth()}`;
+            const data = state.graphData[key][state.currentFilter];
+            const color = state.currentFilter === 'clean' ? '#27ae60' : (state.currentFilter === 'suspicious' ? '#f39c12' : '#e74c3c');
+
+            const mainContainer = document.getElementById('graph-container');
+            const xAxisContainer = document.getElementById('x-axis-container');
+
+            if (direction) {
+                // Sliding Logic
+                state.isNavigating = true;
+                const wrapper = document.getElementById('graph-view-wrapper');
+                const xWrapper = document.getElementById('x-axis-container-wrapper');
+
+                const oldContainer = mainContainer.cloneNode(true);
+                const oldXContainer = xAxisContainer.cloneNode(true);
+
+                mainContainer.innerHTML = '';
+                xAxisContainer.innerHTML = '';
+
+                // Build current view
+                populateGraphNodes(mainContainer, xAxisContainer, data, color);
+
+                const slideWidth = wrapper.offsetWidth;
+                const directionMultiplier = direction === 'next' ? 1 : -1;
+
+                // Setup new nodes position for slide
+                mainContainer.style.transform = `translateX(${directionMultiplier * 100}%)`;
+                xAxisContainer.style.transform = `translateX(${directionMultiplier * 100}%)`;
+
+                wrapper.prepend(oldContainer);
+                xWrapper.prepend(oldXContainer);
+
+                // Force reflow
+                wrapper.offsetHeight;
+
+                // Trigger animation
+                oldContainer.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease';
+                oldXContainer.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease';
+                mainContainer.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                xAxisContainer.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+
+                oldContainer.style.transform = `translateX(${-directionMultiplier * 100}%)`;
+                oldXContainer.style.transform = `translateX(${-directionMultiplier * 100}%)`;
+                oldContainer.style.opacity = '0';
+                oldXContainer.style.opacity = '0';
+
+                mainContainer.style.transform = `translateX(0)`;
+                xAxisContainer.style.transform = `translateX(0)`;
+
+                setTimeout(() => {
+                    oldContainer.remove();
+                    oldXContainer.remove();
+                    state.isNavigating = false;
+                }, 600);
+            } else {
+                // Simple Filter Swap/Data Refresh
+                populateGraphNodes(mainContainer, xAxisContainer, data, color);
+            }
+
+            // Update Labels
+            const dateStr = state.selectedCalDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+            const count = data[state.selectedCalDate.getDate() - 1] || 0;
+
+            document.getElementById('forensic-summary-title').textContent = `Forensic Summary for ${dateStr}`;
+            document.getElementById('current-range-display').textContent = `${count} Files Analyzed Ã¢â‚¬Â¢ Verdict: ${state.currentFilter.toUpperCase()}`;
+        }
+
+        function populateGraphNodes(container, xAxis, data, color) {
+            container.innerHTML = '';
+            xAxis.innerHTML = '';
+
+            data.forEach((val, i) => {
+                const dayNum = i + 1;
+                const isSelected = dayNum === state.selectedCalDate.getDate();
+
+                const bar = document.createElement('div');
+                bar.className = `graph-bar w-full rounded-t-sm cursor-pointer relative group ${isSelected ? 'highlight' : ''}`;
+                bar.style.height = `${(val / 100) * 300}px`;
+                bar.style.backgroundColor = color;
+                bar.style.opacity = isSelected ? '1' : '0.6';
+                bar.onclick = () => {
+                    state.selectedCalDate.setDate(dayNum);
+                    updateGraphUI();
+                };
+                container.appendChild(bar);
+
+                const label = document.createElement('span');
+                label.className = `flex-1 text-center truncate px-1 ${isSelected ? 'text-primary font-bold' : ''}`;
+                label.textContent = dayNum.toString().padStart(2, '0');
+                xAxis.appendChild(label);
+            });
+        }
+
+        function updateGraph(filterType) {
+            if (state.isNavigating) return;
+            state.currentFilter = filterType;
+
+            ['clean', 'suspicious', 'stego'].forEach(t => {
+                document.getElementById(`filter-${t}`).classList.toggle('active-filter', t === state.currentFilter);
+            });
+            updateGraphUI();
+        }
+
+        function navigateTimePeriod(dir) {
+            if (state.isNavigating) return;
+            state.selectedCalDate.setMonth(state.selectedCalDate.getMonth() + (dir === 'next' ? 1 : -1));
+
+            const key = `${state.selectedCalDate.getFullYear()}-${state.selectedCalDate.getMonth()}`;
+            if (!state.graphData[key]) {
+                state.graphData[key] = getEmptyMonthData(state.selectedCalDate.getFullYear(), state.selectedCalDate.getMonth());
+            }
+
+            updateGraphUI(dir);
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const days = now.getDate().toString().padStart(2, '0');
+            const monthsStr = now.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+            const yearsStr = now.getFullYear();
+            const time = now.toLocaleTimeString('en-GB', { hour12: false });
+            document.getElementById('clock').textContent = `${days} ${monthsStr} ${yearsStr} ${time}`;
+        }
+
+        // Initialization
+        setInterval(updateClock, 1000);
+        updateClock();
+        populateDropdowns();
+        updateGraphUI();
+
+// Reports table populated with live forensic data by applyData()
+
+        document.getElementById('prev-month-btn').onclick = () => { state.currentCalDate.setMonth(state.currentCalDate.getMonth() - 1); renderCalendar(); };
+        document.getElementById('next-month-btn').onclick = () => { state.currentCalDate.setMonth(state.currentCalDate.getMonth() + 1); renderCalendar(); };
+
+        document.getElementById('calendar-modal-overlay').onclick = (e) => {
+            if (e.target.id === 'calendar-modal-overlay') toggleCalendarModal();
+        };
+    </script>
+    <!-- Quarantine Modal Overlay -->
+    <div class="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-stack-lg transition-opacity duration-300 opacity-0 pointer-events-none"
+        id="quarantine-modal-overlay">
+        <div class="w-full max-w-lg bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col transform transition-transform duration-300 scale-95"
+            id="quarantine-modal">
+            <div
+                class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-error text-[20px]">security</span>
+                    <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Quarantine Vault</h3>
+                </div>
+                <button
+                    class="material-symbols-outlined text-on-surface-variant transition-colors bg-surface-container-highest p-1 rounded cursor-pointer hover:text-error"
+                    onclick="document.getElementById('quarantine-modal-overlay').classList.add('opacity-0', 'pointer-events-none'); document.getElementById('quarantine-modal').classList.add('scale-95');">close</button>
+            </div>
+            <div id="quarantine-vault-list" class="p-stack-md h-[320px] overflow-y-auto custom-scrollbar space-y-2">
+                <!-- Data will be injected here by JS -->
+            </div>
+            <div class="p-stack-md border-t border-outline-variant bg-surface-container-low flex justify-end">
+
+            </div>
+        </div>
+    </div>
+
+
+
+
+<!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+     Shadow-Trace pywebview Live Data Bridge
+     Connects static HTML template to the Python backend.
+     DO NOT REMOVE Ã¢â‚¬â€ required for live data.
+     Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
+<script>
+(function () {
+    'use strict';
+
+    function applyData(d) {
+        if (!d) return;
+        var stats = d.stats || {};
+        var el;
+
+        // KPI Stats
+        el = document.getElementById('kpi-total');
+        if (el) el.textContent = (stats.total_scanned || 0).toLocaleString();
+        el = document.getElementById('kpi-clean');
+        if (el) el.textContent = (stats.total_clean || 0).toLocaleString();
+        el = document.getElementById('kpi-suspicious');
+        if (el) el.textContent = (stats.total_suspicious || 0).toLocaleString();
+        el = document.getElementById('kpi-stego');
+        if (el) el.textContent = (stats.total_threats || 0).toLocaleString();
+
+        // Real Graph Data
+        var allReports = d.all_reports || [];
+        var realGraphData = {};
+        
+        allReports.forEach(function(r) {
+            if (!r.modified) return;
+            var parts = r.modified.split(' ')[0].split('-');
+            if(parts.length !== 3) return;
+            var year = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10) - 1;
+            var day = parseInt(parts[2], 10);
+            
+            var key = year + '-' + month;
+            if (!realGraphData[key]) {
+                var daysInMonth = new Date(year, month + 1, 0).getDate();
+                realGraphData[key] = { clean: new Array(daysInMonth).fill(0), suspicious: new Array(daysInMonth).fill(0), stego: new Array(daysInMonth).fill(0) };
+            }
+            
+            var cat = (r.category || 'clean').toLowerCase();
+            if (cat === 'reports' || cat === 'uncategorised') cat = 'clean';
+            if (cat === 'threat' || cat === 'stego_detected') cat = 'stego';
+            
+            if (['clean', 'suspicious', 'stego'].indexOf(cat) !== -1) {
+                realGraphData[key][cat][day - 1] += 1;
+            }
+        });
+        
+        if (window.state && window.state.currentCalDate) {
+            var currentKey = window.state.currentCalDate.getFullYear() + '-' + window.state.currentCalDate.getMonth();
+            if (!realGraphData[currentKey]) {
+                var dim = new Date(window.state.currentCalDate.getFullYear(), window.state.currentCalDate.getMonth() + 1, 0).getDate();
+                realGraphData[currentKey] = { clean: new Array(dim).fill(0), suspicious: new Array(dim).fill(0), stego: new Array(dim).fill(0) };
+            }
+            var selectedKey = window.state.selectedCalDate.getFullYear() + '-' + window.state.selectedCalDate.getMonth();
+            if (!realGraphData[selectedKey]) {
+                var sDim = new Date(window.state.selectedCalDate.getFullYear(), window.state.selectedCalDate.getMonth() + 1, 0).getDate();
+                realGraphData[selectedKey] = { clean: new Array(sDim).fill(0), suspicious: new Array(sDim).fill(0), stego: new Array(sDim).fill(0) };
+            }
+            // Merge realGraphData into state.graphData
+            for (var k in realGraphData) {
+                window.state.graphData[k] = realGraphData[k];
+            }
+            if (typeof updateGraphUI === 'function') updateGraphUI();
+            
+            // Also update the summary text
+            var curData = window.state.graphData[selectedKey][window.state.currentFilter];
+            var curDay = window.state.selectedCalDate.getDate();
+            var val = curData[curDay - 1] || 0;
+            var summaryEl = document.getElementById('current-range-display');
+            if (summaryEl) {
+                summaryEl.textContent = val + " Files Analyzed - Verdict: " + window.state.currentFilter.toUpperCase();
+            }
+        }
+
+        // Recent Scans Table
+        var reports = d.recent_reports || [];
+        var tbody = document.getElementById('reports-table-body');
+        if (tbody && reports.length) {
+            tbody.innerHTML = '';
+            reports.slice(0, 15).forEach(function (r) {
+                var v = (r.category || r.verdict || 'CLEAN').toUpperCase();
+                if (v === 'STEGO_DETECTED' || v === 'THREAT') v = 'STEGO';
+                var color = v === 'STEGO' ? '#e74c3c' : v === 'SUSPICIOUS' ? '#f39c12' : '#27ae60';
+                var fname = r.name || r.filename || 'Unknown';
+                var ts = r.modified || r.timestamp || '';
+                var row = document.createElement('tr');
+                row.className = 'hover:bg-surface-container-highest transition-colors cursor-pointer group';
+                row.innerHTML =
+                    '<td class="px-stack-lg py-4 text-center"><div class="w-2 h-2 rounded-full mx-auto" style="background-color:' + color + '"></div></td>' +
+                    '<td class="px-stack-lg py-4 text-on-surface truncate max-w-[300px]" title="' + fname + '">' + fname + '</td>' +
+                    '<td class="px-stack-lg py-4 text-on-surface-variant">' + ts + '</td>' +
+                    '<td class="px-stack-lg py-4 text-right"><span class="stego-badge" style="background-color:' + color + '">' + v + '</span></td>' +
+                    '<td class="px-stack-lg py-4 text-right"><span class="material-symbols-outlined text-on-surface-variant cursor-pointer" onclick="if(window.pywebview&&window.pywebview.api)window.location.href=`case_manager.html`">visibility</span></td>';
+                tbody.appendChild(row);
+            });
+        }
+
+        // Quarantined Files
+        var qFiles = d.quarantined_files;
+        if (qFiles && Array.isArray(qFiles)) {
+            var countEl = document.getElementById('dashboard-q-count');
+            if (countEl) countEl.textContent = qFiles.length;
+            
+            var lastAddedEl = document.getElementById('dashboard-q-last');
+            if (lastAddedEl) {
+                if (qFiles.length > 0) {
+                    var latest = new Date(qFiles[0].date_quarantined);
+                    var now = new Date();
+                    var diffMs = now - latest;
+                    var diffHrs = Math.floor(diffMs / 3600000);
+                    if (diffHrs < 1) {
+                        lastAddedEl.textContent = "Last added: Just now";
+                    } else if (diffHrs < 24) {
+                        lastAddedEl.textContent = "Last added: " + diffHrs + " hours ago";
+                    } else {
+                        lastAddedEl.textContent = "Last added: " + Math.floor(diffHrs/24) + " days ago";
+                    }
+                } else {
+                    lastAddedEl.textContent = "Last added: N/A";
+                }
+            }
+            
+            var vaultList = document.getElementById('quarantine-vault-list');
+            if (vaultList) {
+                vaultList.innerHTML = '';
+                if (qFiles.length === 0) {
+                    vaultList.innerHTML = '<div class="p-4 text-center text-on-surface-variant font-code-sm">Vault is empty</div>';
+                } else {
+                    qFiles.forEach(function(f) {
+                        var div = document.createElement('div');
+                        div.className = 'p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group';
+                        var iconName = 'dangerous';
+                        var iconClass = 'text-error';
+                        var riskText = 'High Risk';
+                        if (f.filename.toLowerCase().indexOf('.sh') !== -1 || f.filename.toLowerCase().indexOf('.ps1') !== -1) {
+                            iconName = 'warning';
+                            iconClass = 'text-warning';
+                            riskText = 'Medium Risk';
+                        } else if (f.filename.toLowerCase().indexOf('.dat') !== -1 || f.filename.toLowerCase().indexOf('.tmp') !== -1) {
+                            iconName = 'help';
+                            iconClass = 'text-on-surface-variant';
+                            riskText = 'Unknown';
+                        }
+                        div.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined ${iconClass} text-[18px]">${iconName}</span>
+                                <span class="font-code-sm text-on-surface group-hover:text-primary transition-colors text-[13px]" title="${f.filename}">
+                                    ${f.filename.length > 35 ? f.filename.substring(0, 32) + '...' : f.filename}
+                                </span>
+                            </div>
+                            <span class="font-label-caps text-on-surface-variant text-[9px]">${f.size_kb} KB | ${riskText}</span>
+                        `;
+                        vaultList.appendChild(div);
+                    });
+                }
+            }
+        }
+
+        // Cache live data in localStorage for instant 0ms restoration
+        try {
+            localStorage.setItem('shadowtrace_dashboard_cache', JSON.stringify(d));
+        } catch(e) {}
+
+        // Real System Health
+        if (d.system_health) {
+            updateSystemHealthUI(d.system_health);
+        }
+    }
+
+    function updateSystemHealthUI(h) {
+        if (!h) return;
+        var score = typeof h.score === 'number' ? h.score : 100;
+        var label = h.status_label || (score >= 90 ? 'OPTIMAL' : (score >= 70 ? 'DEGRADED' : 'CRITICAL'));
+        var color = h.color || (score >= 90 ? '#27ae60' : (score >= 70 ? '#f39c12' : '#e74c3c'));
+
+        var percentEl = document.getElementById('health-percent');
+        if (percentEl) percentEl.textContent = score + '%';
+
+        var labelEl = document.getElementById('health-status-label');
+        if (labelEl) {
+            labelEl.textContent = label;
+            labelEl.style.color = color;
+        }
+
+        var circleEl = document.getElementById('health-circle');
+        if (circleEl) {
+            circleEl.style.stroke = color;
+            var offset = Math.max(0, Math.min(251.2, 251.2 * (1 - (score / 100))));
+            circleEl.style.strokeDashoffset = offset.toFixed(2);
+        }
+
+        var container = document.getElementById('health-cards-container');
+        if (container && h.cards && Array.isArray(h.cards)) {
+            container.innerHTML = '';
+            h.cards.forEach(function (card) {
+                var cardDiv = document.createElement('div');
+                var icon = 'check_circle';
+                var borderClass = 'border-l-[#27ae60] bg-[#27ae60]/10';
+                var textClass = 'text-[#27ae60]';
+
+                if (card.type === 'warning') {
+                    icon = 'warning';
+                    borderClass = 'border-l-warning bg-warning/10';
+                    textClass = 'text-warning';
+                } else if (card.type === 'error') {
+                    icon = 'error';
+                    borderClass = 'border-l-error bg-error/10';
+                    textClass = 'text-error';
+                }
+
+                cardDiv.className = 'flex items-start gap-3 p-3 rounded-lg border-l-4 w-full justify-start ' + borderClass;
+                cardDiv.innerHTML = `
+                    <span class="material-symbols-outlined ${textClass} text-[18px] shrink-0 mt-0.5">${icon}</span>
+                    <div class="flex flex-col">
+                        <span class="text-on-surface text-[12px] font-medium leading-tight">${card.title}</span>
+                        <span class="text-on-surface-variant text-[10px] font-code-sm mt-0.5">${card.details}</span>
+                    </div>
+                `;
+                container.appendChild(cardDiv);
+            });
+        }
+    }
+
+    
+    
+
+function loadData() {
+    if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.refresh_data === 'function') {
+        window.pywebview.api.refresh_data().then(function (jsonStr) {
+            try { applyData(JSON.parse(jsonStr)); }
+            catch (e) { console.error('[ST Bridge]', e); }
+        }).catch(function(e) { console.error('[ST Bridge Reject]', e); });
+        
+        // Fetch Quarantined Files
+        if (typeof window.pywebview.api.get_quarantined_files === 'function') {
+            window.pywebview.api.get_quarantined_files().then(function(jsonStr) {
+                try {
+                    var files = JSON.parse(jsonStr);
+                    var countEl = document.getElementById('dashboard-q-count');
+                    if (countEl) countEl.textContent = files.length;
+                    
+                    var lastAddedEl = document.getElementById('dashboard-q-last');
+                    if (lastAddedEl) {
+                        if (files.length > 0) {
+                            var latest = new Date(files[0].date_quarantined);
+                            var now = new Date();
+                            var diffMs = now - latest;
+                            var diffHrs = Math.floor(diffMs / 3600000);
+                            if (diffHrs < 1) {
+                                lastAddedEl.textContent = "Last added: Just now";
+                            } else if (diffHrs < 24) {
+                                lastAddedEl.textContent = "Last added: " + diffHrs + " hours ago";
+                            } else {
+                                lastAddedEl.textContent = "Last added: " + Math.floor(diffHrs/24) + " days ago";
+                            }
+                        } else {
+                            lastAddedEl.textContent = "Last added: N/A";
+                        }
+                    }
+                    
+                    var vaultList = document.getElementById('quarantine-vault-list');
+                    if (vaultList) {
+                        vaultList.innerHTML = '';
+                        if (files.length === 0) {
+                            vaultList.innerHTML = '<div class="p-4 text-center text-on-surface-variant font-code-sm">Vault is empty</div>';
+                        } else {
+                            files.forEach(function(f) {
+                                var div = document.createElement('div');
+                                div.className = 'p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group';
+                                
+                                // Determine icon based on file name or type
+                                var iconName = 'dangerous';
+                                var iconClass = 'text-error';
+                                var riskText = 'High Risk';
+                                
+                                if (f.filename.toLowerCase().indexOf('.sh') !== -1 || f.filename.toLowerCase().indexOf('.ps1') !== -1) {
+                                    iconName = 'warning';
+                                    iconClass = 'text-warning';
+                                    riskText = 'Medium Risk';
+                                } else if (f.filename.toLowerCase().indexOf('.dat') !== -1 || f.filename.toLowerCase().indexOf('.tmp') !== -1) {
+                                    iconName = 'help';
+                                    iconClass = 'text-on-surface-variant';
+                                    riskText = 'Unknown';
+                                }
+                                
+                                div.innerHTML = `
+                                    <div class="flex items-center gap-3">
+                                        <span class="material-symbols-outlined ${iconClass} text-[18px]">${iconName}</span>
+                                        <span class="font-code-sm text-on-surface group-hover:text-primary transition-colors text-[13px]" title="${f.filename}">
+                                            ${f.filename.length > 35 ? f.filename.substring(0, 32) + '...' : f.filename}
+                                        </span>
+                                    </div>
+                                    <span class="font-label-caps text-on-surface-variant text-[9px]">${f.size_kb} KB | ${riskText}</span>
+                                `;
+                                vaultList.appendChild(div);
+                            });
+                        }
+                    }
+                } catch (e) { console.error('[ST Bridge Quarantine]', e); }
+            });
+        }
+
+        // Fetch System Health
+        if (typeof window.pywebview.api.get_system_health === 'function') {
+            window.pywebview.api.get_system_health().then(function(jsonStr) {
+                try {
+                    var health = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+                    updateSystemHealthUI(health);
+                } catch(e) { console.error('[ST Bridge Health]', e); }
+            }).catch(function(e) { console.error('[ST Bridge Health Reject]', e); });
+        }
+    } else {
+        setTimeout(loadData, 100);
+    }
+}
+
+function updateLiveScanUI(data) {
+    if (!data) return;
+    
+    var idleState = document.getElementById('scan-idle-state');
+    var activeState = document.getElementById('scan-active-state');
+    var currentFilenameEl = document.getElementById('scan-current-filename');
+    var queueCountEl = document.getElementById('scan-queue-count');
+    var progressPercentEl = document.getElementById('scan-progress-percent');
+    var progressBarEl = document.getElementById('scan-progress-bar');
+    var queueModalList = document.getElementById('queue-modal-list');
+
+    var queue = data.queue || [];
+    var queueLength = queue.length;
+
+    // Update Queue Button Count
+    if (queueCountEl) {
+        queueCountEl.textContent = 'Queue: ' + queueLength + (queueLength === 1 ? ' file' : ' files');
+    }
+
+    // Update Scan Queue Modal Content
+    if (queueModalList) {
+        queueModalList.innerHTML = '';
+        var hasAny = false;
+
+        if (data.active && data.filename) {
+            hasAny = true;
+            var activeDiv = document.createElement('div');
+            activeDiv.className = 'p-3 bg-surface-container-highest/50 border border-secondary/30 rounded flex items-center justify-between';
+            activeDiv.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-secondary animate-spin text-[18px]">progress_activity</span>
+                    <span class="font-code-sm text-on-surface text-[13px] truncate max-w-[280px]" title="${data.filename}">${data.filename}</span>
+                </div>
+                <span class="font-label-caps text-secondary text-[9px] border border-secondary/50 px-2 py-0.5 rounded">Current</span>
+            `;
+            queueModalList.appendChild(activeDiv);
+        }
+
+        if (queue.length > 0) {
+            hasAny = true;
+            queue.forEach(function (qItem) {
+                var qDiv = document.createElement('div');
+                qDiv.className = 'p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors';
+                var qName = typeof qItem === 'string' ? qItem : (qItem.filename || qItem.path || 'Unknown');
+                qDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span class="font-code-sm text-on-surface-variant text-[13px] truncate max-w-[280px]" title="${qName}">${qName}</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                `;
+                queueModalList.appendChild(qDiv);
+            });
+        }
+
+        if (!hasAny) {
+            queueModalList.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 opacity-60">
+                    <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-2">inbox</span>
+                    <span class="text-on-surface-variant font-code-sm text-[13px]">No files in queue</span>
+                </div>
+            `;
+        }
+    }
+
+    // Active vs Idle card display
+    if (data.active) {
+        if (idleState) idleState.classList.add('hidden');
+        if (activeState) activeState.classList.remove('hidden');
+
+        if (currentFilenameEl) {
+            currentFilenameEl.textContent = data.filename || 'Unknown file';
+            currentFilenameEl.title = data.filename || '';
+        }
+
+        var stageNum = data.stage || 1;
+        for (var s = 1; s <= 5; s++) {
+            var iconEl = document.getElementById('stage-icon-' + s);
+            var textEl = document.getElementById('stage-text-' + s);
+            if (iconEl && textEl) {
+                if (s < stageNum) {
+                    // Completed stage: green tick
+                    iconEl.textContent = 'check_circle';
+                    iconEl.className = 'material-symbols-outlined text-[#27ae60] text-[20px]';
+                    textEl.className = 'text-on-surface text-body-md';
+                } else if (s === stageNum) {
+                    // Current stage: loading spinner
+                    iconEl.textContent = 'progress_activity';
+                    iconEl.className = 'material-symbols-outlined text-primary animate-spin text-[20px]';
+                    textEl.className = 'text-primary font-medium text-body-md';
+                } else {
+                    // Upcoming stage: gray outline circle
+                    iconEl.textContent = 'radio_button_unchecked';
+                    iconEl.className = 'material-symbols-outlined text-on-surface-variant text-[20px]';
+                    textEl.className = 'text-on-surface-variant text-body-md';
+                }
+            }
+        }
+
+        var progress = data.progress || 0;
+        if (progressPercentEl) progressPercentEl.textContent = progress + '%';
+        if (progressBarEl) progressBarEl.style.width = progress + '%';
+    } else {
+        if (idleState) idleState.classList.remove('hidden');
+        if (activeState) activeState.classList.add('hidden');
+        if (progressPercentEl) progressPercentEl.textContent = '0%';
+        if (progressBarEl) progressBarEl.style.width = '0%';
+    }
+}
+
+function pollScanStatus() {
+    if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.get_live_scan_status === 'function') {
+        window.pywebview.api.get_live_scan_status().then(function (raw) {
+            try {
+                var data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                updateLiveScanUI(data);
+            } catch (e) {
+                console.error('[LiveScan Status Error]', e);
+            }
+        }).catch(function (e) {
+            console.error('[LiveScan Bridge Reject]', e);
+        });
+    }
+}
+
+// 1. Stage 1: Instant 0ms Hydration from pre-loaded cache or localStorage
+try {
+    var initialData = window.__INITIAL_DASHBOARD_DATA__;
+    if (!initialData) {
+        var rawLocal = localStorage.getItem('shadowtrace_dashboard_cache');
+        if (rawLocal) initialData = JSON.parse(rawLocal);
+    }
+    if (initialData) {
+        applyData(initialData);
+    }
+} catch(e) {
+    console.error('[Dashboard Instant Hydration Error]', e);
+}
+
+// 2. Stage 2: Authoritative Live Bridge Sync
+loadData();
+window.addEventListener('pywebviewready', loadData);
+setInterval(loadData, 10000);
+pollScanStatus();
+setInterval(pollScanStatus, 1000);
+})();
+</script>
+</body>
+
+</html>
+
+

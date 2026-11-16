@@ -1,0 +1,108 @@
+# =============================================================================
+# Shadow-Trace | .gitignore
+# =============================================================================
+
+# Virtual environments
+venv/
+.venv/
+
+# Bytecode & cache
+__pycache__/
+*.pyc
+
+# Environment & secrets
+.env
+
+# Build & packaging
+build/
+dist/
+*.spec.bak
+
+# Preserve folder structure with .gitkeep
+!.gitkeep
+
+# Runtime & output folders
+reports/*
+!reports/.gitkeep
+quarantine/*
+!quarantine/.gitkeep
+sandbox/*
+!sandbox/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Models folder
+models/*.pth
+models/*.pt
+!models/.gitkeep
+
+# Databases & journals
+*.db
+*.db-journal
+
+# ML / PyTorch model weights
+*.pth
+*.pt
+
+# Verification & intel caches
+*.seal.json
+vt_cache.json
+url_captures.json
+shadowtrace_url_cache.json
+*url_cache*.json
+
+# Test outputs & logs
+test_*.html
+test_*.txt
+test_*.js
+*.log
+dump.txt
+script_output.txt
+missing.html
+
+# IDE & system artifacts
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+
+# Executables & archives
+*.zip
+*.exe
+
+# Datasets
+ShadowTrace_DocDataset/
+dataset/
+datasets/
+*dataset*/
+
+# Sample malware, binary payloads & stego test files
+*.bin
+*stego*
+*suspicious*
+mock_wannacry_sample.bin
+scratch/
+archive/
+backups/
+*.lock
+
+# Whitelist legitimate detection rules
+!capa_rules/**
+!yara_rules/**
+
+# User data & photos
+data/profile_photo.png
+data/digital_signature.png
+
+# Test and sample images (exclude root and demo images)
+*.png
+*.jpg
+*.jpeg
+demo_images/
+clean_*.png
+test_*.png
+demo_*.png
+
+# Retain only required application UI icons and static frontend assets
+!ui/assets/**
+!UIUX/assets/**

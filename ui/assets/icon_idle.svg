@@ -1,0 +1,5 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#1e1e1e"/>
+  <path d="M32 10L14 18V30C14 41.0457 21.6112 50.9155 32 54C42.3888 50.9155 50 41.0457 50 30V18L32 10Z" fill="#95a5a6"/>
+  <text x="32" y="38" fill="white" font-family="IBM Plex Sans, sans-serif" font-size="24" font-weight="700" text-anchor="middle">S</text>
+</svg>

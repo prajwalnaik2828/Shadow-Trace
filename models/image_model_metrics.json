@@ -1,0 +1,25 @@
+{
+  "model": "YedroudjNetV3_SpatialLSB",
+  "accuracy": 0.835,
+  "precision": 0.9034,
+  "recall": 0.7388,
+  "f1_score": 0.8129,
+  "auc_roc": 0.94,
+  "best_val_auc": 0.9427,
+  "stego_methods": [
+    "LSB-1",
+    "LSB-2",
+    "PVD"
+  ],
+  "dataset": "synthetic_spatial_lsb",
+  "confusion_matrix": [
+    [
+      286,
+      23
+    ],
+    [
+      76,
+      215
+    ]
+  ]
+}

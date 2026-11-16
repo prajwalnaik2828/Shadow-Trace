@@ -1,0 +1,5 @@
+CAPA Rules Version: v10.0.0
+Matching CAPA Engine Version: 10.0.0
+Source Repository: mandiant/capa-rules
+Release URL: https://github.com/mandiant/capa-rules/releases/tag/v10.0.0
+Download Date: 2026-11-07 16:59:42 UTC

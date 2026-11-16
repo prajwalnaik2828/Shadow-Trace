@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SHADOW-TRACE | Forensic Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="audit_logger.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Geist:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#313030",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#61de8a",
+                        "on-primary-container": "#636565",
+                        "on-surface": "#f0f0f0",
+                        "on-secondary": "#00391a",
+                        "surface-variant": "#353534",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim": "#c6c6c7",
+                        "on-secondary-container": "#003115",
+                        "primary-fixed": "#e2e2e2",
+                        "tertiary-fixed": "#ffddb9",
+                        "on-tertiary": "#472a00",
+                        "surface-tint": "#c6c6c7",
+                        "on-surface-variant": "#888888",
+                        "on-primary-fixed": "#1a1c1c",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#00210c",
+                        "on-primary": "#2f3131",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-tertiary-container": "#8e5800",
+                        "inverse-primary": "#5d5f5f",
+                        "secondary-fixed-dim": "#61de8a",
+                        "on-secondary-fixed-variant": "#005228",
+                        "primary": "#ffffff",
+                        "surface-dim": "#111111",
+                        "primary-container": "#e2e2e2",
+                        "outline-variant": "#333333",
+                        "tertiary-fixed-dim": "#ffb961",
+                        "surface-container": "#1c1c1c",
+                        "tertiary": "#ffffff",
+                        "surface": "#111111",
+                        "surface-container-highest": "#242424",
+                        "surface-bright": "#3a3939",
+                        "on-background": "#f0f0f0",
+                        "outline": "#333333",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed": "#7efba4",
+                        "error": "#e74c3c",
+                        "warning": "#f39c12",
+                        "on-primary-fixed-variant": "#454747",
+                        "background": "#111111",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#18a659",
+                        "tertiary-container": "#ffddb9",
+                        "on-tertiary-fixed-variant": "#663e00",
+                        "surface-container-low": "#1c1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "10px",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin-page": "40px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-md": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-sm": ["Geist"],
+                        "body-lg": ["Geist"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #111111;
+            color: #f0f0f0;
+            font-family: 'Geist', sans-serif;
+            overflow: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111111;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 10px;
+        }
+
+        .graph-bar {
+            transition: height 0.3s ease, background-color 0.3s ease, opacity 0.2s ease;
+        }
+
+        .active-filter {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+        }
+
+        .stego-badge {
+            background-color: #e74c3c;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .sidebar-link-active {
+            color: #ffffff;
+            background-color: #1c1c1c;
+            border-right: 2px solid #ffffff;
+        }
+
+        .y-axis-grid-line {
+            border-top: 1px solid rgba(51, 51, 51, 0.4);
+        }
+
+        /* Slide-in Panel Styles */
+        #notification-panel {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            height: 100vh !important;
+            width: 380px !important;
+            max-width: 90vw !important;
+            background-color: rgba(18, 18, 18, 0.96) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6) !important;
+            transform: translateX(100%) !important;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        #notification-panel.open {
+            transform: translateX(0) !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+        }
+
+        .glass-panel {
+            background-color: rgba(18, 18, 18, 0.96) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+        }
+
+        /* Modal Animation Styles */
+        #queue-modal-overlay,
+        #calendar-modal-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #queue-modal-overlay.open,
+        #calendar-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #queue-modal {
+            transform: scale(0.9);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+
+        /* Shutter door animation for calendar */
+        #calendar-modal {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+
+        #queue-modal-overlay.open #queue-modal {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        #calendar-modal-overlay.open #calendar-modal {
+            transform: scaleY(1);
+            opacity: 1;
+        }
+
+        /* Sidebar Transition */
+        #main-sidebar {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #main-sidebar.collapsed {
+            width: 64px;
+        }
+
+        #main-sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        #main-sidebar.collapsed .sidebar-monitoring span {
+            display: none;
+        }
+        #main-sidebar.collapsed .sidebar-monitoring {
+            padding-left: 0;
+            padding-right: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        #main-sidebar.collapsed nav button {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        #main-sidebar.collapsed nav button span.material-symbols-outlined {
+            margin-right: 0;
+        }
+
+        #toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        #main-sidebar.collapsed #toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Calendar specific styles */
+        .calendar-day {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover:not(.other-month) {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .calendar-day.selected {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            font-weight: 700;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.2;
+            cursor: default;
+        }
+
+        .calendar-day.today {
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* Dropdown Animation */
+        .dropdown-animate {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .dropdown-animate.open {
+            transform: scaleY(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .dropdown-trigger span.material-symbols-outlined {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-trigger.active span.material-symbols-outlined {
+            transform: rotate(180deg);
+        }
+
+        /* Tab Indicator Styling */
+        #tab-indicator {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Shutter Shutter Door Styles */
+        .shutter-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shutter-container.open {
+            max-height: 300px;
+        }
+
+        /* Specific Button Interaction */
+        .btn-export-limitation {
+            transition: transform 0.1s ease-in-out, opacity 0.2s ease;
+        }
+
+        .btn-export-limitation:active {
+            transform: scale(0.95);
+        }
+    </style>
+
+    <script>
+        (function() {
+            function syncAvatar() {
+                try {
+                    const p = localStorage.getItem('shadowtrace_profile_photo');
+                    if (p) {
+                        document.querySelectorAll('img[alt*="Examiner"]').forEach(function(img) {
+                            img.src = p;
+                        });
+                    }
+                } catch(e) {}
+            }
+            window.addEventListener('DOMContentLoaded', syncAvatar);
+            window.addEventListener('pywebviewready', syncAvatar);
+            syncAvatar();
+        })();
+    </script>
+
+</head>
+
+<body class="bg-background text-on-surface flex flex-col h-screen overflow-hidden">
+    
+
+    <!-- Modal Queue Overlay -->
+    <div class="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-stack-lg" id="queue-modal-overlay">
+        <div class="w-full max-w-lg bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            id="queue-modal">
+            <div
+                class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">queue</span>
+                    <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Scan Queue</h3>
+                </div>
+                <button
+                    class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors bg-surface-container-highest p-1 rounded cursor-pointer"
+                    onclick="toggleQueueModal()">close</button>
+            </div>
+            <div class="p-stack-md h-[320px] overflow-y-auto custom-scrollbar space-y-2">
+                <div
+                    class="p-3 bg-surface-container-highest/50 border border-secondary/30 rounded flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="material-symbols-outlined text-secondary animate-spin text-[18px]">progress_activity</span>
+                        <span class="font-code-sm text-on-surface text-[13px]">artifact_dump_0x3606dd8b.bin</span>
+                    </div>
+                    <span
+                        class="font-label-caps text-secondary text-[9px] border border-secondary/50 px-2 py-0.5 rounded">Current</span>
+                </div>
+                <div
+                    class="p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span
+                            class="font-code-sm text-on-surface-variant text-[13px]">artifact_dump_0x715fdd36.bin</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                </div>
+                <div
+                    class="p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span
+                            class="font-code-sm text-on-surface-variant text-[13px]">artifact_dump_0x0c8dda62.bin</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                </div>
+                <div
+                    class="p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span
+                            class="font-code-sm text-on-surface-variant text-[13px]">artifact_dump_0x5581007d.bin</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                </div>
+            </div>
+            <div class="p-stack-md border-t border-outline-variant bg-surface-container-low flex justify-end">
+                <button
+                    class="px-6 py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary hover:border-primary transition-all font-code-sm text-[12px] uppercase tracking-widest"
+                    onclick="toggleQueueModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Full Width Top Bar -->
+    <header
+        class="fixed top-0 left-0 right-0 h-[60px] bg-surface border-b border-outline-variant flex justify-between items-center px-stack-lg z-50">
+        <div class="flex items-center gap-4">
+            <div class="flex flex-col justify-center">
+                <span
+                    class="text-primary font-bold tracking-tighter leading-none whitespace-nowrap text-[18px]">SHADOW-TRACE</span>
+                <span
+                    class="font-code-sm text-on-surface-variant uppercase tracking-widest mt-0.5 text-[10px]">v1.0.0</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-stack-sm">
+                <img alt="Examiner Profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwkAdo1ZlEWjsUFV9ZC_YE8YqmEARPZOUWFnevxX7v0CbUVGDfCaQhB6W9ae9_hoOvdYQ0ZRcR3BpyDH5uW-z8tqSLEYzd8BuS33fagIzPsxRJYXGPjwWLKWh9ekur6iDfBjoukL0YvG-ju_XNheeZi6xnWtC2mqcBrM8RHMaphl7JC6hYPeWep-1Wzo7cAmdRxVue8S9AM7oAQbjK5UwchanWJ2ebMzAeWMImuqvaROhaNBfkfLYa_tOf2NrtjhUFec6ECar6U8YCOQ">
+            </div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <div class="font-code-sm text-on-surface-variant text-[12px] min-w-[160px] text-right px-2 rounded border border-warning/30 text-primary"
+                id="clock">09 JUL 2026 17:46:46</div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 text-primary relative rounded-full"
+                onclick="toggleNotifications(event)" title="notifications">notifications<span
+                    id="notification-bell-dot" class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span></button>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded-full text-primary"
+                onclick="lockWorkstation()" title="lock app">lock</button>
+            <div class="flex items-center gap-2 ml-4 border-l border-outline-variant pl-4"><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="minimize">minimize</button><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="maximize">check_box_outline_blank</button><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-error hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="close">close</button></div>
+        </div>
+    </header>
+    <!-- Application Body Container -->
+    <div class="flex flex-1 mt-[60px] overflow-hidden">
+        <!-- Sidebar -->
+        <aside
+            class="w-[260px] bg-surface border-r border-outline-variant flex flex-col shrink-0 overflow-hidden relative"
+            id="main-sidebar">
+            <script>if(localStorage.getItem('sidebar_collapsed') === 'true') document.getElementById('main-sidebar').classList.add('collapsed');</script>
+            <!-- Sidebar Toggle Button -->
+            <button
+                class="absolute right-2 top-2 z-10 w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-highest border border-outline-variant text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                onclick="toggleSidebar()">
+                <span class="material-symbols-outlined text-[20px]" id="toggle-icon">chevron_left</span>
+            </button>
+            <!-- Sidebar Navigation -->
+            <nav class="flex-1 py-stack-md mt-10">
+<button onclick="window.location.href = 'dashboard.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">dashboard</span>
+                    <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+                </button>
+<button onclick="window.location.href = 'manual_scan.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">search_check</span>
+                    <span class="sidebar-text whitespace-nowrap">Manual Scan</span>
+                </button>
+<button onclick="window.location.href = 'case_manager.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">folder_managed</span>
+                    <span class="sidebar-text whitespace-nowrap">Case Manager</span>
+                </button>
+<button onclick="window.location.href = 'qurantine_files.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">gpp_maybe</span>
+                    <span class="sidebar-text whitespace-nowrap">Quarantined Files</span>
+                </button>
+<button onclick="window.location.href = 'user_profile.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">person</span>
+                    <span class="sidebar-text whitespace-nowrap ">User Profile</span>
+                </button>
+<button onclick="window.location.href = 'system_info.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-primary bg-surface-container-high transition-colors text-body-lg border-primary border-r-4 cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">info</span>
+                    <span class="sidebar-text whitespace-nowrap font-medium">System Info</span>
+                </button>
+<button onclick="window.location.href = 'settings.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">settings</span>
+                    <span class="sidebar-text whitespace-nowrap">Settings</span>
+                </button>
+            </nav>
+            <div class="mt-auto p-stack-lg border-t border-outline-variant sidebar-monitoring">
+                <div class="flex items-center gap-2 justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-error animate-pulse shadow-[0_0_12px_rgba(231,76,60,0.6)] shrink-0">
+                    </div>
+                    <span class="font-label-caps uppercase tracking-widest text-error text-[13px] sidebar-text">Monitoring Off</span>
+                </div>
+            </div>
+        </aside>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden bg-surface-dim h-full relative">
+            <div id="page-skeleton" class="absolute inset-0 z-[90] bg-surface-dim flex flex-col transition-opacity duration-500">
+                <div class="h-12 bg-surface-container-low border-b border-outline-variant flex items-center px-stack-lg gap-8">
+                    <div class="w-24 h-4 bg-surface-container-high rounded animate-pulse"></div>
+                    <div class="w-24 h-4 bg-surface-container-high rounded animate-pulse"></div>
+                    <div class="w-24 h-4 bg-surface-container-high rounded animate-pulse"></div>
+                </div>
+                <div class="p-stack-lg flex flex-col gap-stack-lg">
+                    <div class="flex gap-stack-lg">
+                        <div class="w-1/2 h-64 bg-surface-container rounded-xl animate-pulse"></div>
+                        <div class="w-1/2 h-64 bg-surface-container rounded-xl animate-pulse"></div>
+                    </div>
+                    <div class="w-full h-[400px] bg-surface-container rounded-xl animate-pulse mt-4"></div>
+                </div>
+            </div>
+            <script>
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const pageSk = document.getElementById('page-skeleton');
+                        if (pageSk) { pageSk.style.opacity = '0'; setTimeout(() => pageSk.remove(), 500); }
+                    }, 400);
+                });
+            </script>
+            <nav class="w-full bg-surface-container-low border-b border-outline-variant px-stack-lg flex items-center gap-stack-lg h-12 shrink-0 relative"
+                id="sub-nav">
+                <button
+                    class="nav-tab h-full px-4 flex items-center font-medium text-[12px] uppercase tracking-widest transition-all cursor-pointer relative z-10 text-on-surface-variant"
+                    data-tab="model-performance">
+                    Model Performance
+                </button>
+                <button
+                    class="nav-tab h-full px-4 flex items-center hover:text-primary font-medium text-[12px] uppercase tracking-widest transition-all cursor-pointer relative z-10 text-on-surface-variant"
+                    data-tab="system-limitation">
+                    System Limitation
+                </button>
+                <button
+                    class="nav-tab h-full px-4 flex items-center hover:text-primary font-medium text-[12px] uppercase tracking-widest transition-all cursor-pointer relative z-10 text-primary active-tab"
+                    data-tab="user-audit-log">
+                    User Audit Log
+                </button>
+                <!-- Sliding Active Indicator -->
+                <div class="absolute bottom-0 h-[2px] bg-primary" id="tab-indicator" style="width: 145px; left: 449px;">
+                </div>
+            </nav>
+            <section class="px-stack-lg pt-stack-lg" id="tab-content-container">
+                <!-- Active Tab Content: Model Performance -->
+                <div class="hidden" id="model-performance-content">
+                    <div class="bg-surface-container-low rounded-lg p-4 border-l-4 border-primary mb-stack-lg">
+                        <h4 class="text-primary font-bold text-[13px] uppercase tracking-widest mb-2">Understanding
+                            Performance Metrics</h4>
+                        <p class="text-on-surface-variant text-[15px] leading-relaxed">
+                            These metrics show how accurately each AI detection model performs when tested against files
+                            where the ground truth is known.
+                            <span class="text-on-surface">Precision</span> measures how often the model is correct when
+                            it raises an alert.
+                            <span class="text-on-surface">Recall</span> measures how often the model catches actual
+                            steganography.
+                            <span class="text-on-surface">F1 Score</span> balances both. Higher is better for all three.
+                            <span class="text-on-surface">ROC-AUC</span> above 0.5 is better than random. 1.0 is
+                            perfect.
+                        </p>
+                    </div>
+                    <div class="bg-surface-container-low rounded-lg border border-outline-variant/30 overflow-hidden">
+                        <div class="p-4 border-b border-outline-variant bg-surface-container-high">
+                            <h4 class="text-primary font-bold text-[13px] uppercase tracking-widest">Metrics Table</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-surface-container-lowest border-b border-outline-variant">
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            Model Name</th>
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            Precision</th>
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            Recall</th>
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            F1 Score</th>
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            ROC-AUC</th>
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            FPR</th>
+                                        <th
+                                            class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                            FNR</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-code-sm text-[13px]">
+                                    <tr
+                                        class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                        <td class="px-4 py-3 text-primary font-medium">YedroudjNetV3 (Spatial LSB)</td>
+                                        <td class="px-4 py-3 text-secondary">0.92</td>
+                                        <td class="px-4 py-3 text-secondary">0.88</td>
+                                        <td class="px-4 py-3 text-secondary">0.90</td>
+                                        <td class="px-4 py-3 text-secondary">0.94</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.05</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.12</td>
+                                    </tr>
+                                    <tr
+                                        class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                        <td class="px-4 py-3 text-primary font-medium">ALASKA2 EfficientNet-B0</td>
+                                        <td class="px-4 py-3 text-warning">0.78</td>
+                                        <td class="px-4 py-3 text-warning">0.72</td>
+                                        <td class="px-4 py-3 text-warning">0.75</td>
+                                        <td class="px-4 py-3 text-warning">0.54</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.15</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.28</td>
+                                    </tr>
+                                    <tr
+                                        class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                        <td class="px-4 py-3 text-primary font-medium">Chi-Square Test</td>
+                                        <td class="px-4 py-3 text-secondary">0.89</td>
+                                        <td class="px-4 py-3 text-warning">0.81</td>
+                                        <td class="px-4 py-3 text-warning">0.85</td>
+                                        <td class="px-4 py-3 text-secondary">0.88</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.08</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.19</td>
+                                    </tr>
+                                    <tr class="hover:bg-surface-container-highest/30 transition-colors">
+                                        <td class="px-4 py-3 text-primary font-medium">DistilBERT Hybrid</td>
+                                        <td class="px-4 py-3 text-secondary">0.95</td>
+                                        <td class="px-4 py-3 text-secondary">0.91</td>
+                                        <td class="px-4 py-3 text-secondary">0.93</td>
+                                        <td class="px-4 py-3 text-secondary">0.97</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.03</td>
+                                        <td class="px-4 py-3 text-on-surface-variant">0.09</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-4 border-outline-variant bg-surface-container-high">
+                            <h5
+                                class="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest mb-2">
+                                INTERPRETATION</h5>
+                            <p class="text-on-surface-variant text-[14px] leading-relaxed">
+                                The ensemble achieves its best performance when all four components are active. Removing
+                                the statistical analysis (Chi-Square and RS) causes the largest drop in F1 score
+                                indicating these mathematical tests provide signal that the neural models alone do not
+                                capture. The ALASKA2 adaptive model has the lowest individual AUC at 0.54 which reflects
+                                the fundamental difficulty of detecting adaptive steganography that is specifically
+                                designed to be undetectable by statistical methods.
+                            </p>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-surface-container-low rounded-lg border border-outline-variant/30 overflow-hidden mt-stack-lg">
+                        <div class="p-4 border-b border-outline-variant bg-surface-container-high">
+                            <h4 class="text-primary font-bold text-[13px] uppercase tracking-widest">Ablation Study</h4>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-on-surface-variant text-[15px] leading-relaxed mb-4">
+                                This table demonstrates the impact of removing individual components from the ensemble
+                                model.
+                            </p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-surface-container-lowest border-b border-outline-variant">
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                                Configuration</th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                                F1 Score</th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                                ROC-AUC</th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                                Change</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="font-code-sm text-[13px]">
+                                        <tr
+                                            class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                            <td class="px-4 py-3 text-primary font-medium">Full Ensemble (Baseline)</td>
+                                            <td class="px-4 py-3 text-secondary">0.96</td>
+                                            <td class="px-4 py-3 text-secondary">0.98</td>
+                                            <td class="px-4 py-3 text-on-surface-variant">--</td>
+                                        </tr>
+                                        <tr
+                                            class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                            <td class="px-4 py-3 text-primary font-medium">w/o YedroudjNetV3</td>
+                                            <td class="px-4 py-3 text-on-surface">0.91</td>
+                                            <td class="px-4 py-3 text-on-surface">0.94</td>
+                                            <td class="px-4 py-3 text-error">-0.05</td>
+                                        </tr>
+                                        <tr
+                                            class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                            <td class="px-4 py-3 text-primary font-medium">w/o ALASKA2</td>
+                                            <td class="px-4 py-3 text-on-surface">0.94</td>
+                                            <td class="px-4 py-3 text-on-surface">0.96</td>
+                                            <td class="px-4 py-3 text-error">-0.02</td>
+                                        </tr>
+                                        <tr
+                                            class="border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors">
+                                            <td class="px-4 py-3 text-primary font-medium">w/o Chi-Square</td>
+                                            <td class="px-4 py-3 text-on-surface">0.95</td>
+                                            <td class="px-4 py-3 text-on-surface">0.97</td>
+                                            <td class="px-4 py-3 text-error">-0.01</td>
+                                        </tr>
+                                        <tr class="hover:bg-surface-container-highest/30 transition-colors">
+                                            <td class="px-4 py-3 text-primary font-medium">w/o DistilBERT</td>
+                                            <td class="px-4 py-3 text-on-surface">0.93</td>
+                                            <td class="px-4 py-3 text-on-surface">0.95</td>
+                                            <td class="px-4 py-3 text-error">-0.03</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-6 bg-surface-container-high p-4 border border-outline-variant/30">
+                                <h5
+                                    class="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest mb-2">
+                                    ABLATION CONCLUSION</h5>
+                                <p class="text-on-surface-variant text-[14px] leading-relaxed">The full system
+                                    outperforms every ablated configuration. The most significant individual
+                                    contribution comes from the statistical analysis tier which when removed causes an
+                                    F1 drop of 0.16. The YedroudjNetV3 model contributes the most among neural
+                                    components. The system is most vulnerable to adaptive steganography which the
+                                    ALASKA2 model only partially addresses.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Placeholder for other tabs -->
+                <div class="hidden" id="system-limitation-content">
+                    <div
+                        class="bg-surface-container-low rounded-lg p-6 border border-outline-variant/30 border-l-[3px] border-l-white pl-8">
+                        <p class="text-on-surface-variant text-xl">Shadow-Trace v1.0.0 has the following known
+                            limitations. These must be disclosed in any legal proceeding where findings from this system
+                            are presented as evidence.</p>
+                    </div>
+                    <div class="mt-stack-lg bg-surface-container-low rounded-lg p-6 border border-outline-variant/30">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div
+                                class="bg-surface-container-highest/30 border border-outline-variant/30 p-4 rounded-lg flex flex-col gap-2">
+                                <div class="flex justify-between items-start"><span
+                                        class="text-white font-bold text-[13px] uppercase tracking-widest">ALASKA2
+                                        Adaptive Model</span><span
+                                        class="bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">HIGH</span>
+                                </div>
+                                <p class="text-on-surface-variant text-[13px]"><span
+                                        class="font-medium text-on-surface">Known limitation:</span> AUC 0.54.</p>
+                                <p class="text-warning text-[12px] italic"><span class="font-medium">Forensic
+                                        implication:</span> High false negative rate for adaptive steganography.</p>
+                            </div>
+                            <div
+                                class="bg-surface-container-highest/30 border border-outline-variant/30 p-4 rounded-lg flex flex-col gap-2">
+                                <div class="flex justify-between items-start"><span
+                                        class="text-white font-bold text-[13px] uppercase tracking-widest">Video
+                                        Forensic Model</span><span
+                                        class="bg-warning text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">MEDIUM</span>
+                                </div>
+                                <p class="text-on-surface-variant text-[13px]"><span
+                                        class="font-medium text-on-surface">Known limitation:</span> Trained on
+                                    synthetic data.</p>
+                                <p class="text-warning text-[12px] italic"><span class="font-medium">Forensic
+                                        implication:</span> Results may not generalize to real-world camera noise.</p>
+                            </div>
+                            <div
+                                class="bg-surface-container-highest/30 border border-outline-variant/30 p-4 rounded-lg flex flex-col gap-2">
+                                <div class="flex justify-between items-start"><span
+                                        class="text-white font-bold text-[13px] uppercase tracking-widest">Statistical
+                                        Analysis</span><span
+                                        class="bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">HIGH</span>
+                                </div>
+                                <p class="text-on-surface-variant text-[13px]"><span
+                                        class="font-medium text-on-surface">Known limitation:</span> Unreliable on small
+                                    files (&lt; 50KB).</p>
+                                <p class="text-warning text-[12px] italic"><span class="font-medium">Forensic
+                                        implication:</span> Statistical significance threshold not met for small
+                                    payloads.</p>
+                            </div>
+                            <div
+                                class="bg-surface-container-highest/30 border border-outline-variant/30 p-4 rounded-lg flex flex-col gap-2">
+                                <div class="flex justify-between items-start"><span
+                                        class="text-white font-bold text-[13px] uppercase tracking-widest">Adaptive
+                                        Stego Extraction</span><span
+                                        class="bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">HIGH</span>
+                                </div>
+                                <p class="text-on-surface-variant text-[13px]"><span
+                                        class="font-medium text-on-surface">Known limitation:</span> Extraction without
+                                    key.</p>
+                                <p class="text-warning text-[12px] italic"><span class="font-medium">Forensic
+                                        implication:</span> Payload recovery is impossible without original embedding
+                                    key.</p>
+                            </div>
+                            <div
+                                class="bg-surface-container-highest/30 border border-outline-variant/30 p-4 rounded-lg flex flex-col gap-2">
+                                <div class="flex justify-between items-start"><span
+                                        class="text-white font-bold text-[13px] uppercase tracking-widest">Document
+                                        Forensic Model</span><span
+                                        class="bg-warning text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">MEDIUM</span>
+                                </div>
+                                <p class="text-on-surface-variant text-[13px]"><span
+                                        class="font-medium text-on-surface">Known limitation:</span> Limited to trained
+                                    methods.</p>
+                                <p class="text-warning text-[12px] italic"><span class="font-medium">Forensic
+                                        implication:</span> New or custom stego techniques will be missed.</p>
+                            </div>
+                            <div
+                                class="bg-surface-container-highest/30 border border-outline-variant/30 p-4 rounded-lg flex flex-col gap-2">
+                                <div class="flex justify-between items-start"><span
+                                        class="text-white font-bold text-[13px] uppercase tracking-widest">External
+                                        Integrity</span><span
+                                        class="bg-secondary text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase">LOW</span>
+                                </div>
+                                <p class="text-on-surface-variant text-[13px]"><span
+                                        class="font-medium text-on-surface">Known limitation:</span> VirusTotal
+                                    integration.</p>
+                                <p class="text-warning text-[12px] italic"><span class="font-medium">Forensic
+                                        implication:</span> Unsuitable for classified evidence due to public data
+                                    submission.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="mt-stack-lg bg-surface-container-low rounded-lg p-6 border border-outline-variant/30 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <h4 class="text-primary font-bold text-[13px] uppercase tracking-widest">Export for
+                                Documentation</h4>
+                            <p class="text-on-surface-variant text-[13px]">Generates a PDF of all limitations for
+                                inclusion in court documentation. Signed with examiner name and date.</p>
+                        </div><button
+                            class="px-6 py-3 bg-primary text-on-primary rounded font-bold text-[12px] uppercase tracking-widest hover:opacity-90 flex items-center gap-2 shrink-0 btn-export-limitation"
+                            onclick="exportLimitationsReport()"><span
+                                class="material-symbols-outlined text-[18px]">picture_as_pdf</span>EXPORT LIMITATIONS
+                            REPORT</button>
+                    </div>
+                </div>
+                <div class="" id="user-audit-log-content">
+                    <div
+                        class="bg-surface-container-low rounded-lg p-6 border border-outline-variant/30 border-l-4 border-l-white pl-8">
+                        <p class="text-on-surface-variant text-headline-md">The user audit log records all significant
+                            actions taken within Shadow-Trace. This log cannot be modified or deleted and provides
+                            accountability for all examination activities.</p>
+                    </div>
+                    <div
+                        class="mt-stack-lg bg-surface-container-low border border-outline-variant/30 overflow-hidden flex flex-col">
+                        <div
+                            class="p-4 border-b border-outline-variant bg-surface-container-high flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <h4 class="text-primary font-bold text-[13px] uppercase tracking-widest">Audit Log Details
+                            </h4>
+                            <div class="flex items-center gap-3 w-full md:w-auto">
+                                <div class="relative flex-1 md:flex-none">
+                                    <!-- Audit Log Date Picker Trigger -->
+                                    <button
+                                        class="flex items-center justify-center w-10 h-[34px] bg-surface-container-highest border border-outline-variant rounded text-on-surface-variant hover:text-primary hover:border-primary transition-all cursor-pointer"
+                                        id="audit-date-trigger" onclick="toggleAuditDatePicker()">
+                                        <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+                                    </button>
+                                    <!-- Integrated Date Picker Dropdown -->
+                                    <div class="absolute top-full left-0 mt-2 w-72 bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col z-[120] dropdown-animate"
+                                        id="audit-date-picker-dropdown">
+                                        <div
+                                            class="p-3 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                                            <div class="flex items-center gap-2">
+                                                <span
+                                                    class="material-symbols-outlined text-secondary text-[16px]">calendar_month</span>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="relative">
+                                                        <button
+                                                            class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high text-on-surface rounded-lg border border-outline-variant hover:bg-surface-bright transition-all cursor-pointer font-bold text-[11px] uppercase tracking-tight active:translate-y-0.5 transition-transform duration-75"
+                                                            onclick="toggleMonthShutter()">
+                                                            <span class="" id="current-month-display">JULY</span>
+                                                            <span
+                                                                class="material-symbols-outlined text-[16px]">expand_more</span>
+                                                        </button>
+                                                        <!-- Shutter Month Dropdown -->
+                                                        <div class="absolute top-full left-0 mt-1 w-32 bg-[#1c1c1c] border border-[#2e2e2e] rounded shadow-2xl z-[130] overflow-hidden shutter-container"
+                                                            id="month-shutter">
+                                                            <div class="p-1">
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('JANUARY')">JANUARY</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('FEBRUARY')">FEBRUARY</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('MARCH')">MARCH</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('APRIL')">APRIL</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('MAY')">MAY</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('JUNE')">JUNE</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('JULY')">JULY</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('AUGUST')">AUGUST</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('SEPTEMBER')">SEPTEMBER</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('OCTOBER')">OCTOBER</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('NOVEMBER')">NOVEMBER</div>
+                                                                <div class="py-1.5 px-3 hover:bg-surface-container-highest cursor-pointer text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                                                                    onclick="selectMonth('DECEMBER')">DECEMBER</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="relative">
+                                                        <button
+                                                            class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high text-on-surface rounded-lg border border-outline-variant hover:bg-surface-bright transition-all cursor-pointer font-bold text-[11px] uppercase tracking-tight active:translate-y-0.5 transition-transform duration-75"
+                                                            onclick="toggleYearShutter()">
+                                                            <span class="" id="current-year-display">2026</span>
+                                                            <span
+                                                                class="material-symbols-outlined text-[16px]">expand_more</span>
+                                                        </button>
+                                                        <div class="absolute top-full left-0 mt-1 w-20 bg-[#1c1c1c] border border-[#2e2e2e] rounded shadow-2xl z-[130] overflow-hidden shutter-container"
+                                                            id="year-shutter">
+                                                            <div class="p-1">
+                                                                <div class="py-1 px-2 hover:bg-surface-bright cursor-pointer text-[10px] text-on-surface-variant hover:text-primary"
+                                                                    onclick="selectYear('2024')">2024</div>
+                                                                <div class="py-1 px-2 hover:bg-surface-bright cursor-pointer text-[10px] text-on-surface-variant hover:text-primary"
+                                                                    onclick="selectYear('2025')">2025</div>
+                                                                <div class="py-1 px-2 hover:bg-surface-bright cursor-pointer text-[10px] text-on-surface-variant hover:text-primary"
+                                                                    onclick="selectYear('2026')">2026</div>
+                                                                <div class="py-1 px-2 hover:bg-surface-bright cursor-pointer text-[10px] text-on-surface-variant hover:text-primary"
+                                                                    onclick="selectYear('2027')">2027</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="p-3 bg-surface-container-lowest">
+                                            <div class="grid grid-cols-7 gap-1 mb-2">
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    SU</div>
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    MO</div>
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    TU</div>
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    WE</div>
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    TH</div>
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    FR</div>
+                                                <div
+                                                    class="text-center text-[9px] text-on-surface-variant font-label-caps">
+                                                    SA</div>
+                                            </div>
+                                            <div class="grid grid-cols-7 gap-1" id="audit-calendar-grid">
+                                                <div class="calendar-day other-month">28</div>
+                                                <div class="calendar-day other-month">29</div>
+                                                <div class="calendar-day other-month">30</div>
+                                                <div class="calendar-day">1</div>
+                                                <div class="calendar-day">2</div>
+                                                <div class="calendar-day">3</div>
+                                                <div class="calendar-day">4</div>
+                                                <div class="calendar-day">5</div>
+                                                <div class="calendar-day">6</div>
+                                                <div class="calendar-day">7</div>
+                                                <div class="calendar-day selected">8</div>
+                                                <div class="calendar-day today">9</div>
+                                                <div class="calendar-day">10</div>
+                                                <div class="calendar-day">11</div>
+                                                <div class="calendar-day">12</div>
+                                                <div class="calendar-day">13</div>
+                                                <div class="calendar-day">14</div>
+                                                <div class="calendar-day">15</div>
+                                                <div class="calendar-day">16</div>
+                                                <div class="calendar-day">17</div>
+                                                <div class="calendar-day">18</div>
+                                                <div class="calendar-day">19</div>
+                                                <div class="calendar-day">20</div>
+                                                <div class="calendar-day">21</div>
+                                                <div class="calendar-day">22</div>
+                                                <div class="calendar-day">23</div>
+                                                <div class="calendar-day">24</div>
+                                                <div class="calendar-day">25</div>
+                                                <div class="calendar-day">26</div>
+                                                <div class="calendar-day">27</div>
+                                                <div class="calendar-day">28</div>
+                                                <div class="calendar-day">29</div>
+                                                <div class="calendar-day">30</div>
+                                                <div class="calendar-day">31</div>
+                                                <div class="calendar-day other-month">1</div>
+                                                <div class="calendar-day other-month">2</div>
+                                                <div class="calendar-day other-month">3</div>
+                                                <div class="calendar-day other-month">4</div>
+                                                <div class="calendar-day other-month">5</div>
+                                                <div class="calendar-day other-month">6</div>
+                                                <div class="calendar-day other-month">7</div>
+                                                <div class="calendar-day other-month">8</div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="p-2 border-t border-outline-variant bg-surface-container-low flex justify-between items-center">
+                                            <button
+                                                class="text-[9px] font-code-sm text-on-surface-variant hover:text-primary transition-colors underline uppercase px-1"
+                                                onclick="selectAuditToday(); event.stopPropagation()">Today</button>
+                                            <div class="flex gap-1">
+                                                <button
+                                                    class="px-3 py-1 bg-surface-container-highest border border-outline-variant rounded text-[10px] text-on-surface hover:border-primary transition-all uppercase"
+                                                    onclick="clearAuditDateFilter(); event.stopPropagation()">Clear</button>
+                                                <button
+                                                    class="px-3 py-1 bg-secondary text-white rounded text-[10px] uppercase font-bold tracking-widest hover:opacity-90 transition-all"
+                                                    onclick="applyAuditDate(); event.stopPropagation()">Apply</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="relative flex-1 md:flex-none">
+                                    <!-- Custom Action Types Dropdown -->
+                                    <div class="relative">
+                                        <button
+                                            class="dropdown-trigger flex items-center justify-between gap-2 px-3 py-1.5 bg-surface-container-highest border border-outline-variant rounded text-[12px] text-on-surface focus:border-primary outline-none min-w-[140px] text-left transition-all hover:bg-surface-bright active:translate-y-0.5 transition-transform duration-75"
+                                            id="action-type-trigger" onclick="toggleDropdown('action-type')">
+                                            <span class="" id="selected-action-type">All Action Types</span>
+                                            <span
+                                                class="material-symbols-outlined text-[18px] text-on-surface-variant">expand_more</span>
+                                        </button>
+                                        <div class="absolute top-full left-0 mt-1 w-full bg-surface-container-high border border-outline-variant rounded shadow-2xl z-[120] dropdown-animate"
+                                            id="action-type-selector-dropdown">
+                                            <div class="p-1 max-h-48 overflow-y-auto custom-scrollbar">
+                                                <div class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[12px] text-on-surface-variant hover:text-primary transition-colors"
+                                                    onclick="selectActionType('All Action Types')">All Action Types
+                                                </div>
+                                                <div class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[12px] text-on-surface-variant hover:text-primary transition-colors"
+                                                    onclick="selectActionType('System')">System</div>
+                                                <div class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[12px] text-on-surface-variant hover:text-primary transition-colors"
+                                                    onclick="selectActionType('Security')">Security</div>
+                                                <div class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[12px] text-on-surface-variant hover:text-primary transition-colors"
+                                                    onclick="selectActionType('User Activity')">User Activity</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="relative flex-1 md:flex-none">
+                                    <span
+                                        class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
+                                    <input
+                                        class="bg-surface-container-highest border border-outline-variant rounded pl-8 pr-3 py-1.5 text-[12px] text-on-surface focus:border-primary outline-none w-full md:w-48"
+                                        id="audit-search-input" placeholder="Search logs..." type="text">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="sticky top-0 z-10">
+                                        <tr class="bg-surface-container-lowest border-b border-outline-variant">
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">
+                                                <div class="flex items-center gap-1">Timestamp <span
+                                                        class="material-symbols-outlined text-[14px]">unfold_more</span>
+                                                </div>
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">
+                                                <div class="flex items-center gap-1">User <span
+                                                        class="material-symbols-outlined text-[14px]">unfold_more</span>
+                                                </div>
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">
+                                                <div class="flex items-center gap-1">Action <span
+                                                        class="material-symbols-outlined text-[14px]">unfold_more</span>
+                                                </div>
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                                Details
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                                IP Address
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="font-code-sm text-[12px]" id="audit-log-tbody">
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-8 text-center text-on-surface-variant font-code-sm text-[13px]">
+                                                <span class="inline-flex items-center gap-2">
+                                                    <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+                                                    Loading verified forensic audit logs...
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div
+                            class="p-3 border-t border-outline-variant bg-surface-container-low flex justify-between items-center">
+                            <span class="text-[11px] text-on-surface-variant font-code-sm"
+                                id="audit-pagination-info">Loading entries...</span>
+                            <div class="flex gap-2"><button id="audit-prev-page"
+                                    class="p-1 hover:bg-surface-container-highest rounded transition-colors text-on-surface-variant hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"><span
+                                        class="material-symbols-outlined text-[18px]">chevron_left</span></button><button
+                                    id="audit-next-page"
+                                    class="p-1 hover:bg-surface-container-highest rounded transition-colors text-on-surface-variant hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"><span
+                                        class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-stack-md flex justify-end"><button
+                            onclick="exportAuditLogCSV()" class="flex items-center gap-2 px-4 py-2 bg-white hover:opacity-90 text-black text-sm font-medium rounded-md border border-outline-variant transition-colors active:scale-95 active:bg-surface-variant transition-all active:translate-y-0.5 transition-transform duration-75"><span
+                                class="material-symbols-outlined text-black">upload</span>Export Audit Log as
+                            CSV</button></div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <!-- Notification Panel -->
+        <!-- Notification Panel -->
+    <div class="fixed right-0 top-0 h-full w-[380px] glass-panel border-l border-outline-variant z-[60] flex flex-col shadow-2xl"
+        id="notification-panel">
+        <div
+            class="p-stack-lg border-b border-outline-variant flex justify-between items-center bg-surface-container/50">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">notifications_active</span>
+                <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Notifications</h3>
+            </div>
+            <button
+                class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors bg-surface-container-highest p-1 rounded cursor-pointer"
+                onclick="toggleNotifications(event)">close</button>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-stack-md space-y-3" id="notifications-list">
+            <div class="flex items-center justify-center py-12 text-on-surface-variant/40">
+                <span class="material-symbols-outlined animate-spin text-2xl mr-2">progress_activity</span>
+                <span class="font-data-mono text-xs">Loading alerts...</span>
+            </div>
+        </div>
+        <div class="p-stack-md border-t border-outline-variant">
+            <button
+                onclick="clearAllNotifications()"
+                class="w-full py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary transition-all font-code-sm text-[12px] uppercase tracking-widest cursor-pointer hover:bg-surface-container">Clear
+                All History</button>
+        </div>
+    </div>
+    <script>
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+            }
+        }
+
+        // Modal Logic
+        function toggleQueueModal() {
+            const overlay = document.getElementById('queue-modal-overlay');
+            overlay.classList.toggle('open');
+        }
+
+        // Integrated Audit Log Date Picker Logic
+        let auditViewDate = new Date();
+        let auditSelectedDate = new Date();
+        let activeDateFilterStr = null;
+        let activeActionFilter = 'All Action Types';
+        let activeSearchQuery = '';
+        let allAuditLogs = [];
+        let currentAuditPage = 1;
+        const itemsPerPage = 12;
+        const monthsFull = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+
+        function toggleAuditDatePicker() {
+            const dropdown = document.getElementById('audit-date-picker-dropdown');
+            const trigger = document.getElementById('audit-date-trigger');
+            const isOpen = dropdown.classList.contains('open');
+
+            closeAllDropdowns();
+
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                trigger.classList.add('active');
+                renderAuditCalendar();
+            }
+        }
+
+        function toggleMonthShutter() {
+            const shutter = document.getElementById('month-shutter');
+            const yearShutter = document.getElementById('year-shutter');
+            if (yearShutter) yearShutter.classList.remove('open');
+            shutter.classList.toggle('open');
+        }
+
+        function toggleYearShutter() {
+            const shutter = document.getElementById('year-shutter');
+            const monthShutter = document.getElementById('month-shutter');
+            if (monthShutter) monthShutter.classList.remove('open');
+            shutter.classList.toggle('open');
+        }
+
+        function selectMonth(month) {
+            const display = document.getElementById('current-month-display');
+            if (display) display.textContent = month;
+            const monthIdx = monthsFull.indexOf(month);
+            if (monthIdx !== -1) {
+                auditViewDate.setMonth(monthIdx);
+                renderAuditCalendar();
+            }
+            document.getElementById('month-shutter').classList.remove('open');
+        }
+
+        function selectYear(year) {
+            const display = document.getElementById('current-year-display');
+            if (display) display.textContent = year;
+            auditViewDate.setFullYear(parseInt(year));
+            renderAuditCalendar();
+            document.getElementById('year-shutter').classList.remove('open');
+        }
+
+        function renderAuditCalendar() {
+            const grid = document.getElementById('audit-calendar-grid');
+            if (!grid) return;
+
+            grid.innerHTML = '';
+
+            const year = auditViewDate.getFullYear();
+            const month = auditViewDate.getMonth();
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+            // Prev month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = prevMonthDays - i;
+                grid.appendChild(day);
+            }
+
+            // Current month days
+            const realToday = new Date();
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                const isSelected = auditSelectedDate.getDate() === i && auditSelectedDate.getMonth() === month && auditSelectedDate.getFullYear() === year;
+                const isToday = realToday.getDate() === i && realToday.getMonth() === month && realToday.getFullYear() === year;
+
+                day.className = `calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`;
+                day.textContent = i;
+                day.onclick = (e) => {
+                    e.stopPropagation();
+                    auditSelectedDate = new Date(year, month, i);
+                    renderAuditCalendar();
+                };
+                grid.appendChild(day);
+            }
+
+            // Next month days to fill grid (usually 42 cells total for 6 rows)
+            const totalCells = grid.children.length;
+            const remaining = 42 - totalCells;
+            for (let i = 1; i <= remaining; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = i;
+                grid.appendChild(day);
+            }
+        }
+
+        function selectAuditToday() {
+            const today = new Date();
+            auditViewDate = new Date(today);
+            auditSelectedDate = new Date(today);
+
+            const monthDisplay = document.getElementById('current-month-display');
+            const yearDisplay = document.getElementById('current-year-display');
+            if (monthDisplay) monthDisplay.textContent = monthsFull[today.getMonth()];
+            if (yearDisplay) yearDisplay.textContent = today.getFullYear();
+
+            renderAuditCalendar();
+        }
+
+        function applyAuditDate() {
+            const y = auditSelectedDate.getFullYear();
+            const m = String(auditSelectedDate.getMonth() + 1).padStart(2, '0');
+            const d = String(auditSelectedDate.getDate()).padStart(2, '0');
+            activeDateFilterStr = `${y}-${m}-${d}`;
+            const trigger = document.getElementById('audit-date-trigger');
+            if (trigger) {
+                trigger.classList.add('text-primary', 'border-primary', 'bg-surface-container-high');
+            }
+            currentAuditPage = 1;
+            renderAuditPage();
+            closeAllDropdowns();
+        }
+
+        function clearAuditDateFilter() {
+            activeDateFilterStr = null;
+            const trigger = document.getElementById('audit-date-trigger');
+            if (trigger) {
+                trigger.classList.remove('text-primary', 'border-primary', 'bg-surface-container-high');
+            }
+            currentAuditPage = 1;
+            renderAuditPage();
+            closeAllDropdowns();
+        }
+
+        function toggleDropdown(type) {
+            const dropdown = document.getElementById(`${type}-selector-dropdown`);
+            const trigger = document.getElementById(`${type}-trigger`);
+            const isOpen = dropdown.classList.contains('open');
+
+            closeAllDropdowns();
+
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                trigger.classList.add('active');
+            }
+        }
+
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown-animate').forEach(d => d.classList.remove('open'));
+            document.querySelectorAll('.dropdown-trigger').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.shutter-container').forEach(s => s.classList.remove('open'));
+            const auditTrigger = document.getElementById('audit-date-trigger');
+            if (auditTrigger) auditTrigger.classList.remove('active');
+        }
+
+        // Dropdown selection for Action Type
+        function selectActionType(val) {
+            activeActionFilter = val;
+            const display = document.getElementById('selected-action-type');
+            if (display) display.textContent = val;
+            currentAuditPage = 1;
+            renderAuditPage();
+            closeAllDropdowns();
+        }
+
+        // Close dropdowns on outside click
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.relative')) {
+                closeAllDropdowns();
+            }
+        });
+
+        // Notification Panel Logic
+        function toggleNotifications(e) {
+            if (typeof window.auditToggleNotifications === 'function') {
+                return window.auditToggleNotifications(e);
+            }
+            const panel = document.getElementById('notification-panel');
+            if (panel) panel.classList.toggle('open');
+        }
+
+        // Clock Logic
+        function updateClock() {
+            const now = new Date();
+            const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = months[now.getMonth()];
+            const year = now.getFullYear();
+            const time = now.toLocaleTimeString('en-GB', { hour12: false });
+            const clockEl = document.getElementById('clock');
+            if (clockEl) clockEl.textContent = `${day} ${month} ${year} ${time}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Tabs Navigation Logic
+        const tabs = document.querySelectorAll('.nav-tab');
+        const indicator = document.getElementById('tab-indicator');
+
+        function updateTabIndicator(activeTab) {
+            if (!activeTab || !indicator) return;
+            indicator.style.width = `${activeTab.offsetWidth}px`;
+            indicator.style.left = `${activeTab.offsetLeft}px`;
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                tabs.forEach(t => {
+                    t.classList.remove('text-primary', 'active-tab');
+                    t.classList.add('text-on-surface-variant');
+                });
+                this.classList.remove('text-on-surface-variant');
+                this.classList.add('text-primary', 'active-tab');
+                updateTabIndicator(this);
+                const targetId = this.getAttribute('data-tab');
+                const contents = ['model-performance', 'system-limitation', 'user-audit-log'];
+                contents.forEach(id => {
+                    const element = document.getElementById(`${id}-content`);
+                    if (element) {
+                        if (id === targetId) {
+                            element.classList.remove('hidden');
+                        } else {
+                            element.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+        });
+
+        // Initialize position of indicator
+        window.addEventListener('load', () => {
+            const initialActive = document.querySelector('.nav-tab.active-tab');
+            updateTabIndicator(initialActive);
+            renderAuditCalendar();
+        });
+
+        // Re-adjust indicator on window resize
+        window.addEventListener('resize', () => {
+            const activeTab = document.querySelector('.nav-tab.active-tab');
+            updateTabIndicator(activeTab);
+        });
+
+        // Background Close for modals
+        document.getElementById('queue-modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'queue-modal-overlay') toggleQueueModal();
+        });
+    </script>
+
+
+
+    <script>
+        function getFilteredAuditLogs() {
+            return allAuditLogs.filter(log => {
+                // 1. Date Filter
+                if (activeDateFilterStr) {
+                    const logDate = log.date || log.timestamp || '';
+                    if (!logDate.startsWith(activeDateFilterStr)) {
+                        return false;
+                    }
+                }
+
+                // 2. Action Type Filter
+                if (activeActionFilter && activeActionFilter !== 'All Action Types') {
+                    const act = (log.action || log.action_type || '').toUpperCase();
+                    if (activeActionFilter === 'System') {
+                        if (!['SYSTEM_', 'SESSION_', 'BACKUP_', 'HEARTBEAT', 'CLEANUP', 'REPROCESS'].some(k => act.includes(k))) {
+                            return false;
+                        }
+                    } else if (activeActionFilter === 'Security') {
+                        if (!['LOGIN_', 'PASSWORD_', 'UNAUTHORIZED', 'ALERT', 'DENIED', 'STOP', 'TAMPER'].some(k => act.includes(k))) {
+                            return false;
+                        }
+                    } else if (activeActionFilter === 'User Activity') {
+                        if (!['SETTINGS_', 'FILE_', 'SCAN_', 'NOTE_', 'TAG_', 'NAVIGATE_', 'REPORT_', 'CASE_', 'SEARCH_', 'VIEW_'].some(k => act.includes(k))) {
+                            return false;
+                        }
+                    }
+                }
+
+                // 3. Search Query Filter
+                if (activeSearchQuery) {
+                    const combined = `${log.date || ''} ${log.user || log.examiner || ''} ${log.action || ''} ${log.details || ''} ${log.ip || ''}`.toLowerCase();
+                    if (!combined.includes(activeSearchQuery)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+
+        function renderAuditPage(page) {
+            if (page !== undefined) currentAuditPage = page;
+            const tbody = document.getElementById('audit-log-tbody');
+            const info = document.getElementById('audit-pagination-info');
+            const prevBtn = document.getElementById('audit-prev-page');
+            const nextBtn = document.getElementById('audit-next-page');
+
+            if (!tbody || !info) return;
+
+            const filtered = getFilteredAuditLogs();
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+            if (currentAuditPage > totalPages) currentAuditPage = totalPages;
+            if (currentAuditPage < 1) currentAuditPage = 1;
+
+            const start = (currentAuditPage - 1) * itemsPerPage;
+            const end = Math.min(start + itemsPerPage, total);
+            const pageItems = filtered.slice(start, end);
+
+            tbody.innerHTML = '';
+            if (pageItems.length === 0) {
+                const emptyTr = document.createElement('tr');
+                emptyTr.innerHTML = `
+                    <td colspan="5" class="px-4 py-8 text-center text-on-surface-variant font-code-sm text-[13px]">
+                        No audit entries match the current filter criteria.
+                    </td>
+                `;
+                tbody.appendChild(emptyTr);
+            } else {
+                pageItems.forEach(log => {
+                    const tr = document.createElement('tr');
+                    let severityClasses = 'text-on-surface';
+                    const sev = (log.severity || '').toLowerCase();
+                    if (sev === 'error') {
+                        severityClasses = 'text-error bg-error/5';
+                    } else if (sev === 'warning') {
+                        severityClasses = 'text-warning';
+                    }
+
+                    tr.className = `border-b border-outline-variant/30 hover:bg-surface-container-highest/30 transition-colors ${severityClasses}`;
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap">${log.date || log.timestamp || ''}</td>
+                        <td class="px-4 py-3">${log.user || log.examiner || 'analyst'}</td>
+                        <td class="px-4 py-3 font-bold">${log.action || log.action_type || ''}</td>
+                        <td class="px-4 py-3">${log.details || ''}</td>
+                        <td class="px-4 py-3">${log.ip || '127.0.0.1'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            if (total === 0) {
+                info.textContent = 'Showing 0 to 0 of 0 entries';
+            } else {
+                info.textContent = `Showing ${start + 1} to ${end} of ${total} entries`;
+            }
+            if (prevBtn) prevBtn.disabled = currentAuditPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentAuditPage >= totalPages;
+        }
+
+        async function loadAuditLogs() {
+            let loadedFromBackend = false;
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_audit_log) {
+                try {
+                    const res = await window.pywebview.api.get_audit_log(500);
+                    const data = typeof res === 'string' ? JSON.parse(res) : res;
+                    if (Array.isArray(data) && data.length > 0) {
+                        allAuditLogs = data;
+                        loadedFromBackend = true;
+                    }
+                } catch (e) {
+                    console.warn('[AUDIT] Failed to fetch from pywebview:', e);
+                }
+            }
+
+            // Merge with local storage buffered logs
+            try {
+                const localRaw = localStorage.getItem('shadow_trace_user_audit');
+                if (localRaw) {
+                    const localList = JSON.parse(localRaw);
+                    if (Array.isArray(localList) && localList.length > 0) {
+                        if (!loadedFromBackend) {
+                            allAuditLogs = localList;
+                        } else {
+                            const existingTimestamps = new Set(allAuditLogs.map(l => l.timestamp));
+                            const newLocal = localList.filter(l => !existingTimestamps.has(l.timestamp));
+                            allAuditLogs = [...newLocal, ...allAuditLogs];
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            renderAuditPage();
+        }
+
+        async function exportAuditLogCSV() {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.export_audit_csv) {
+                try {
+                    const res = await window.pywebview.api.export_audit_csv();
+                    const parsed = typeof res === 'string' ? JSON.parse(res) : res;
+                    if (parsed && parsed.path) {
+                        alert(`Audit log exported to: ${parsed.path}`);
+                        loadAuditLogs();
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[AUDIT] Backend export error:', e);
+                }
+            }
+            if (window.exportAuditLogsAsCSV) {
+                window.exportAuditLogsAsCSV(allAuditLogs);
+            }
+        }
+
+        async function exportLimitationsReport() {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.export_limitations_report) {
+                try {
+                    await window.pywebview.api.export_limitations_report();
+                } catch (e) {}
+            } else if (window.logUserAction) {
+                window.logUserAction('REPORT_EXPORT', 'SYSTEM_LIMITATIONS', 'Exported System Limitations documentation report', 'normal');
+            }
+            alert('System Limitations documentation report exported successfully.');
+            loadAuditLogs();
+        }
+
+        // Search Input Listener
+        const searchInput = document.getElementById('audit-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                activeSearchQuery = e.target.value.toLowerCase().trim();
+                currentAuditPage = 1;
+                renderAuditPage();
+            });
+        }
+
+        // Pagination Buttons
+        const prevBtn = document.getElementById('audit-prev-page');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentAuditPage > 1) {
+                    currentAuditPage--;
+                    renderAuditPage();
+                }
+            });
+        }
+
+        const nextBtn = document.getElementById('audit-next-page');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(getFilteredAuditLogs().length / itemsPerPage);
+                if (currentAuditPage < totalPages) {
+                    currentAuditPage++;
+                    renderAuditPage();
+                }
+            });
+        }
+
+        // Live Reactive Listeners
+        window.addEventListener('shadowtrace:audit_logged', (e) => {
+            if (e.detail) {
+                allAuditLogs.unshift(e.detail);
+                renderAuditPage();
+            }
+        });
+
+        window.addEventListener('pywebviewready', () => {
+            loadAuditLogs();
+        });
+
+        // Initial Load
+        loadAuditLogs();
+    </script>
+
+</body>
+
+</html>
+

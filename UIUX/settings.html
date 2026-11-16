@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SHADOW-TRACE | Forensic Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="audit_logger.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Geist:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#313030",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#27ae60",
+                        "on-primary-container": "#636565",
+                        "on-surface": "#f0f0f0",
+                        "on-secondary": "#00391a",
+                        "surface-variant": "#353534",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim": "#c6c6c7",
+                        "on-secondary-container": "#003115",
+                        "primary-fixed": "#e2e2e2",
+                        "tertiary-fixed": "#ffddb9",
+                        "on-tertiary": "#472a00",
+                        "surface-tint": "#c6c6c7",
+                        "on-surface-variant": "#888888",
+                        "on-primary-fixed": "#1a1c1c",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#00210c",
+                        "on-primary": "#2f3131",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-tertiary-container": "#8e5800",
+                        "inverse-primary": "#5d5f5f",
+                        "secondary-fixed-dim": "#27ae60",
+                        "on-secondary-fixed-variant": "#005228",
+                        "primary": "#ffffff",
+                        "surface-dim": "#111111",
+                        "primary-container": "#e2e2e2",
+                        "outline-variant": "#333333",
+                        "tertiary-fixed-dim": "#ffb961",
+                        "surface-container": "#1c1c1c",
+                        "tertiary": "#ffffff",
+                        "surface": "#111111",
+                        "surface-container-highest": "#242424",
+                        "surface-bright": "#3a3939",
+                        "on-background": "#f0f0f0",
+                        "outline": "#333333",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed": "#7efba4",
+                        "error": "#e74c3c",
+                        "warning": "#f39c12",
+                        "on-primary-fixed-variant": "#454747",
+                        "background": "#111111",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#27ae60",
+                        "tertiary-container": "#ffddb9",
+                        "on-tertiary-fixed-variant": "#663e00",
+                        "surface-container-low": "#1c1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "10px",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin-page": "40px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-md": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-sm": ["Geist"],
+                        "body-lg": ["Geist"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #111111;
+            color: #f0f0f0;
+            font-family: 'Geist', sans-serif;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111111;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 10px;
+        }
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333333;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #888888;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked+.slider {
+            background-color: #27ae60;
+        }
+        input:checked+.slider:before {
+            transform: translateX(16px);
+            background-color: white;
+        }
+        /* Slide-in Panel Styles */
+        #notification-panel {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            height: 100vh !important;
+            width: 380px !important;
+            max-width: 90vw !important;
+            background-color: rgba(18, 18, 18, 0.96) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6) !important;
+            transform: translateX(100%) !important;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        #notification-panel.open {
+            transform: translateX(0) !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+        }
+
+        .glass-panel {
+            background-color: rgba(18, 18, 18, 0.96) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+        }
+        /* Sidebar Transition */
+        #main-sidebar {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #main-sidebar.collapsed {
+            width: 64px;
+        }
+        #main-sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        #main-sidebar.collapsed .sidebar-monitoring span {
+            display: none;
+        }
+        #main-sidebar.collapsed .sidebar-monitoring {
+            padding-left: 0;
+            padding-right: 0;
+            display: flex;
+            justify-content: center;
+        }
+        #main-sidebar.collapsed nav button {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        #main-sidebar.collapsed nav button span.material-symbols-outlined {
+            margin-right: 0;
+        }
+        #toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        #main-sidebar.collapsed #toggle-icon {
+            transform: rotate(180deg);
+        }
+        .settings-input {
+            background-color: #1c1c1c;
+            border: 1px solid #333333;
+            color: #f0f0f0;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 8px 12px;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .settings-input:focus {
+            outline: none;
+            border-color: #27ae60;
+            box-shadow: 0 0 0 1px rgba(39, 174, 96, 0.2);
+        }
+        .settings-card {
+            background-color: #131313;
+            border: 1px solid #2e2e2e;
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .settings-section-title {
+            color: #ffffff;
+            font-family: 'Geist', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2e2e2e;
+        }
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+        .label-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .label-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #f0f0f0;
+        }
+        .label-desc {
+            font-size: 11px;
+            color: #888888;
+            margin-top: 2px;
+        }
+    </style>
+    <script>
+        (function() {
+            function syncAvatar() {
+                try {
+                    const p = localStorage.getItem('shadowtrace_profile_photo');
+                    if (p) {
+                        document.querySelectorAll('img[alt*="Examiner"]').forEach(function(img) {
+                            img.src = p;
+                        });
+                    }
+                } catch(e) {}
+            }
+            window.addEventListener('DOMContentLoaded', syncAvatar);
+            window.addEventListener('pywebviewready', syncAvatar);
+            syncAvatar();
+        })();
+    </script>
+</head>
+<body class="bg-background text-on-surface flex flex-col h-screen overflow-hidden">
+    
+    <!-- Full Width Top Bar -->
+    <header
+        class="fixed top-0 left-0 right-0 h-[60px] bg-surface border-b border-outline-variant flex justify-between items-center px-stack-lg z-50">
+        <div class="flex items-center gap-4">
+            <div class="flex flex-col justify-center">
+                <span
+                    class="text-primary font-bold tracking-tighter leading-none whitespace-nowrap text-[18px]">SHADOW-TRACE</span>
+                <span
+                    class="font-code-sm text-on-surface-variant uppercase tracking-widest mt-0.5 text-[10px]">v1.0.0</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-stack-sm">
+                <img alt="Examiner Profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwkAdo1ZlEWjsUFV9ZC_YE8YqmEARPZOUWFnevxX7v0CbUVGDfCaQhB6W9ae9_hoOvdYQ0ZRcR3BpyDH5uW-z8tqSLEYzd8BuS33fagIzPsxRJYXGPjwWLKWh9ekur6iDfBjoukL0YvG-ju_XNheeZi6xnWtC2mqcBrM8RHMaphl7JC6hYPeWep-1Wzo7cAmdRxVue8S9AM7oAQbjK5UwchanWJ2ebMzAeWMImuqvaROhaNBfkfLYa_tOf2NrtjhUFec6ECar6U8YCOQ">
+            </div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <div class="font-code-sm text-on-surface-variant text-[12px] min-w-[160px] text-right px-2 rounded border border-warning/30 text-primary"
+                id="clock">14 JUL 2026 19:25:08</div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 text-primary relative rounded-full"
+                onclick="toggleNotifications(event)" title="notifications">notifications<span
+                    id="notification-bell-dot" class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span></button>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded-full text-primary"
+                onclick="lockWorkstation()" title="lock app">lock</button>
+            <div class="flex items-center gap-2 ml-4 border-l border-outline-variant pl-4"><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="minimize">minimize</button><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="maximize">check_box_outline_blank</button><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-error hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="close">close</button></div>
+        </div>
+    </header>
+    <!-- Application Body Container -->
+    <div class="flex flex-1 mt-[60px] overflow-hidden">
+        <!-- Sidebar -->
+        <aside
+            class="w-[260px] bg-surface border-r border-outline-variant flex flex-col shrink-0 overflow-hidden relative"
+            id="main-sidebar">
+            <script>if(localStorage.getItem('sidebar_collapsed') === 'true') document.getElementById('main-sidebar').classList.add('collapsed');</script>
+            <!-- Sidebar Toggle Button -->
+            <button
+                class="absolute right-2 top-2 z-10 w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-highest border border-outline-variant text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                onclick="toggleSidebar()">
+                <span class="material-symbols-outlined text-[20px]" id="toggle-icon">chevron_left</span>
+            </button>
+            <!-- Sidebar Navigation -->
+            <nav class="flex-1 py-stack-md mt-10">
+<button onclick="window.location.href = 'dashboard.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">dashboard</span>
+                    <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+                </button>
+<button onclick="window.location.href = 'manual_scan.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">search_check</span>
+                    <span class="sidebar-text whitespace-nowrap">Manual Scan</span>
+                </button>
+<button onclick="window.location.href = 'case_manager.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">folder_managed</span>
+                    <span class="sidebar-text whitespace-nowrap">Case Manager</span>
+                </button>
+<button onclick="window.location.href = 'qurantine_files.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">gpp_maybe</span>
+                    <span class="sidebar-text whitespace-nowrap">Quarantined Files</span>
+                </button>
+<button onclick="window.location.href = 'user_profile.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">person</span>
+                    <span class="sidebar-text whitespace-nowrap ">User Profile</span>
+                </button>
+<button onclick="window.location.href = 'system_info.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">info</span>
+                    <span class="sidebar-text whitespace-nowrap">System Info</span>
+                </button>
+<button onclick="window.location.href = 'settings.html'" class="flex items-center gap-stack-md px-stack-lg py-4 text-primary bg-surface-container-high transition-colors text-body-lg border-primary border-r-4 cursor-pointer w-full text-left overflow-hidden" 
+                    >
+                    <span class="material-symbols-outlined text-[24px] shrink-0">settings</span>
+                    <span class="sidebar-text whitespace-nowrap font-medium">Settings</span>
+                </button>
+            </nav>
+            <div class="mt-auto p-stack-lg border-t border-outline-variant sidebar-monitoring">
+                <div class="flex items-center gap-2 justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-error animate-pulse shadow-[0_0_12px_rgba(231,76,60,0.6)] shrink-0">
+                    </div>
+                    <span class="font-label-caps uppercase tracking-widest text-error text-[13px] sidebar-text">Monitoring Off</span>
+                </div>
+            </div>
+        </aside>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar bg-surface-container-lowest relative">
+            <div id="page-skeleton" class="absolute inset-0 z-[90] bg-surface-container-lowest flex flex-col p-12 gap-8 transition-opacity duration-500">
+                <div class="w-64 h-10 bg-surface-container rounded animate-pulse"></div>
+                <div class="flex flex-col gap-4 max-w-[1000px]">
+                    <div class="w-full h-24 bg-surface-container rounded-xl animate-pulse"></div>
+                    <div class="w-full h-24 bg-surface-container rounded-xl animate-pulse"></div>
+                    <div class="w-full h-24 bg-surface-container rounded-xl animate-pulse"></div>
+                    <div class="w-full h-48 bg-surface-container rounded-xl animate-pulse"></div>
+                </div>
+            </div>
+            <script>
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        const pageSk = document.getElementById('page-skeleton');
+                        if (pageSk) { pageSk.style.opacity = '0'; setTimeout(() => pageSk.remove(), 500); }
+                    }, 400);
+                });
+            </script>
+            <div class="max-w-[1000px] mx-auto p-12 space-y-12 pb-32 h-auto">
+                <!-- Header Section -->
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h1 class="text-3xl font-bold text-primary tracking-tight">System Configuration</h1>
+                        <p class="text-on-surface-variant text-sm mt-2">Manage forensic acquisition, monitoring, and
+                            analysis engine parameters.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="btn-save-settings" onclick="saveSettings()"
+                            class="px-6 py-2 bg-secondary text-white rounded-lg hover:opacity-90 transition-all text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm">
+                            <span class="material-symbols-outlined text-[18px]" id="save-icon">save</span> <span id="save-btn-text">Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- 1. MONITORING SETTINGS -->
+                <section class="settings-card">
+                    <h2 class="settings-section-title uppercase"><span
+                            class="material-symbols-outlined text-secondary">visibility</span> Monitoring Settings</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="label-title mb-2 block">Monitored Folders</label>
+                            <div class="space-y-2" id="folder-list">
+                                <div class="flex gap-2 items-center">
+                                    <div class="flex-1 rounded text-on-surface font-code-sm text-[13px] truncate" title="Downloads">Downloads</div>
+                                    <button class="p-2 text-error hover:bg-error/10 rounded transition-colors material-symbols-outlined cursor-pointer text-[18px]" 
+                                            title="Stop monitoring this directory" onclick="removeMonitoredFolder(0)">delete</button>
+                                </div>
+                                <div class="flex gap-2 items-center">
+                                    <div class="flex-1 rounded text-on-surface font-code-sm text-[13px] truncate" title="Documents">Documents</div>
+                                    <button class="p-2 text-error hover:bg-error/10 rounded transition-colors material-symbols-outlined cursor-pointer text-[18px]" 
+                                            title="Stop monitoring this directory" onclick="removeMonitoredFolder(1)">delete</button>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-3 hidden" id="add-folder-container"><input
+                                    class="settings-input flex-1 bg-black text-white" id="new-folder-path"
+                                    placeholder="Enter folder path (e.g. C:/Data/Evidence)" type="text"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();saveNewFolder();}"><button
+                                    type="button" class="p-2 bg-surface-container-high text-on-surface hover:text-secondary rounded transition-all material-symbols-outlined cursor-pointer"
+                                    onclick="browseFolderForMonitored()" title="Browse Directory">folder_open</button><button
+                                    class="p-2 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white rounded transition-all material-symbols-outlined cursor-pointer"
+                                    onclick="saveNewFolder()" title="Confirm add">check</button><button
+                                    class="p-2 bg-surface-container-high text-on-surface-variant hover:text-error rounded transition-all material-symbols-outlined cursor-pointer"
+                                    onclick="toggleAddFolder()" title="Cancel">close</button></div><button
+                                class="mt-3 text-secondary text-xs font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                onclick="toggleAddFolder()"><span
+                                    class="material-symbols-outlined text-[16px]">add</span> Add monitored
+                                folder</button>
+                        </div>
+                    </div>
+                </section>
+                <!-- 2. SCAN SETTINGS -->
+                <section class="settings-card">
+                    <h2 class="settings-section-title uppercase"><span
+                            class="material-symbols-outlined text-warning">search_insights</span> Scan Settings</h2>
+                    <div class="space-y-1">
+                        <div class="settings-row">
+                            <div class="label-group">
+                                <span class="label-title">Always ON</span>
+                                <span class="label-desc">Keep background monitoring active even if the system window is closed. Automatically starts on device boot to monitor new files.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input id="toggle-always-on" type="checkbox" onchange="onScanToggleChange('always_on_monitoring', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="label-group">
+                                <span class="label-title">Ask user before steg scan</span>
+                                <span class="label-desc">Prompt for confirmation before deep steganography analysis (CPU
+                                    intensive).</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input id="toggle-ask-user-before-steg" type="checkbox" onchange="onScanToggleChange('ask_user_before_steg', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="label-group">
+                                <span class="label-title">Auto-escalate on LSB executable</span>
+                                <span class="label-desc">Automatically flag LSB modified binaries for immediate forensic
+                                    triage.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input id="toggle-auto-escalate-lsb" type="checkbox" onchange="onScanToggleChange('auto_escalate_lsb', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="label-group">
+                                <span class="label-title">Offline Scan Mode</span>
+                                <span class="label-desc">When enabled all cloud scanning including VirusTotal and Hybrid Analysis is disabled.<br>Use this mode for classified or confidential files that must not leave this system.<br>Local ClamAV and YARA scanning remain active.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input id="offline-mode-toggle" type="checkbox" onchange="onOfflineModeToggle(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <!-- VirusTotal Accordion (Moved from dropdown) -->
+                        <div class="settings-accordion-group border border-outline-variant rounded-lg overflow-hidden bg-surface-container-lowest mt-2">
+                            <button type="button" class="w-full text-left flex items-center justify-between p-4 hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
+                                <div class="label-group">
+                                    <span class="label-title">VirusTotal scan</span>
+                                    <span class="label-desc">Enable multi-engine hash lookups using VirusTotal API.</span>
+                                </div>
+                                <span class="material-symbols-outlined text-on-surface-variant chevron transition-transform rotate-180">expand_more</span>
+                            </button>
+                            <div class="border-t border-outline-variant bg-surface-container-low p-4 space-y-6">
+                                <div>
+                                    <h4 class="text-[12px] font-bold text-primary uppercase tracking-widest mb-4">VirusTotal Upload Mode</h4>
+                                    <div class="space-y-4">
+                                        <div class="settings-row !p-0 !border-0 !bg-transparent">
+                                            <div class="label-group">
+                                                <span class="label-title">Hash lookup only (recommended for sensitive files)</span>
+                                                <span class="label-desc block">Only checks if the file hash is known.<br>File contents never leave this system.</span>
+                                            </div>
+                                            <label class="toggle-switch"><input id="toggle-vt-hash-only" type="checkbox" onchange="handleVtToggle('hash')"><span class="slider"></span></label>
+                                        </div>
+                                        <div class="settings-row !p-0 !border-0 !bg-transparent">
+                                            <div class="label-group">
+                                                <span class="label-title">Full file upload (for unknown files)</span>
+                                                <span class="label-desc block">Uploads file to VirusTotal if hash is unknown.<br>Do not use for confidential files.</span>
+                                            </div>
+                                            <label class="toggle-switch"><input id="toggle-vt-full-upload" type="checkbox" onchange="handleVtToggle('upload')"><span class="slider"></span></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Hybrid Analysis Accordion -->
+                        <div class="settings-accordion-group border border-outline-variant rounded-lg overflow-hidden bg-surface-container-lowest mt-4">
+                            <button type="button" class="w-full text-left flex items-center justify-between p-4 hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
+                                <div class="label-group">
+                                    <span class="label-title">Hybrid Analysis scan</span>
+                                    <span class="label-desc">Enable multi-engine hash lookups using Hybrid Analysis API.</span>
+                                </div>
+                                <span class="material-symbols-outlined text-on-surface-variant chevron transition-transform rotate-180">expand_more</span>
+                            </button>
+                            <div class="border-t border-outline-variant bg-surface-container-low p-4 space-y-6">
+                                <div>
+                                    <h4 class="text-[12px] font-bold text-primary uppercase tracking-widest mb-4">Hybrid Analysis Upload Mode</h4>
+                                    <div class="space-y-4">
+                                        <div class="settings-row !p-0 !border-0 !bg-transparent">
+                                            <div class="label-group">
+                                                <span class="label-title">Hash lookup only (recommended for sensitive files)</span>
+                                                <span class="label-desc block">Only checks if the file hash is known.<br>File contents never leave this system.</span>
+                                            </div>
+                                            <label class="toggle-switch"><input id="toggle-ha-hash-only" type="checkbox" onchange="handleHaToggle('hash')"><span class="slider"></span></label>
+                                        </div>
+                                        <div class="settings-row !p-0 !border-0 !bg-transparent">
+                                            <div class="label-group">
+                                                <span class="label-title">Full file upload (for unknown files)</span>
+                                                <span class="label-desc block">Uploads file to Hybrid Analysis if hash is unknown.<br>Do not use for confidential files.</span>
+                                            </div>
+                                            <label class="toggle-switch"><input id="toggle-ha-full-upload" type="checkbox" onchange="handleHaToggle('upload')"><span class="slider"></span></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="label-group">
+                                <span class="label-title">Auto-quarantine on malware detection</span>
+                                <span class="label-desc">Move malicious artifacts to the encrypted vault
+                                    immediately.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input id="toggle-auto-quarantine-malware" type="checkbox" onchange="onScanToggleChange('auto_quarantine_malware', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="label-group">
+                                <span class="label-title">Auto-quarantine on stego detection</span>
+                                <span class="label-desc">Moves the media to encrypted vault immediately if stego content
+                                    is detected.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input id="toggle-auto-quarantine-stego" type="checkbox" onchange="onScanToggleChange('auto_quarantine_stego', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 3. REPORT SETTINGS -->
+                    <section class="settings-card h-full">
+                        <h2 class="settings-section-title uppercase"><span
+                                class="material-symbols-outlined text-primary">description</span> Report Settings</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="label-title mb-2 block">Default report output folder</label>
+                                <div class="flex gap-2">
+                                    <input id="input-report-folder" class="settings-input bg-black text-white" type="text" value="D:\Shadow-trace\reports" onchange="onReportFieldChange('report_output_folder', this.value)">
+                                    <button onclick="browseFolder('input-report-folder')"
+                                        class="px-3 bg-surface-container-high border border-outline-variant text-[11px] rounded uppercase font-bold hover:text-primary transition-colors cursor-pointer">Browse</button>
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <span class="label-title">Auto-generate summary report</span>
+                                <label class="toggle-switch"><input id="toggle-auto-generate-summary-report" type="checkbox" checked onchange="onReportToggleChange('auto_generate_summary_report', this.checked)"><span
+                                        class="slider"></span></label>
+                            </div>
+                            <div class="settings-row">
+                                <span class="label-title">Auto-generate evidence package</span>
+                                <label class="toggle-switch"><input id="toggle-auto-generate-evidence-package" type="checkbox" onchange="onReportToggleChange('auto_generate_evidence_package', this.checked)"><span class="slider"></span></label>
+                            </div>
+                            <div class="settings-row">
+                                <span class="label-title">Include system context</span>
+                                <label class="toggle-switch"><input id="toggle-include-system-context" type="checkbox" checked onchange="onReportToggleChange('include_system_context', this.checked)"><span
+                                        class="slider"></span></label>
+                            </div>
+                            <div>
+                                <label class="label-title mb-2 block">Default examiner signature</label>
+                                <input id="input-examiner-signature" class="settings-input bg-black text-white" type="text" value="" placeholder="Digital Forensic Examiner" onchange="onReportFieldChange('examiner_signature', this.value)">
+                            </div>
+                        </div>
+                    </section>
+                    <!-- 4. API SETTINGS -->
+                    <section class="settings-card h-full">
+                        <h2 class="settings-section-title uppercase"><span
+                                class="material-symbols-outlined text-primary">api</span> API Settings</h2>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="label-title mb-2 flex justify-between items-center">
+                                    VirusTotal API Key
+                                    <span
+                                        class="material-symbols-outlined text-on-surface-variant cursor-pointer text-[18px] hover:text-primary transition-colors"
+                                        onclick="toggleMask(this, 'vt-api')">visibility</span>
+                                </label>
+                                <input class="settings-input bg-black text-white" id="vt-api" type="password"
+                                    value="" placeholder="Enter VirusTotal API Key" onchange="onApiFieldChange('vt_api_key', this.value)">
+                            </div>
+                            <div>
+                                <label class="label-title mb-2 flex justify-between items-center">
+                                    Hybrid Analysis API Key
+                                    <span
+                                        class="material-symbols-outlined text-on-surface-variant cursor-pointer text-[18px] hover:text-primary transition-colors"
+                                        onclick="toggleMask(this, 'ha-api')">visibility</span>
+                                </label>
+                                <input class="settings-input bg-black text-white" id="ha-api" type="password"
+                                    value="" placeholder="Enter Hybrid Analysis API Key" onchange="onApiFieldChange('ha_api_key', this.value)">
+                            </div>
+                            <div>
+                                <label class="label-title mb-2 block">RFC 3161 Timestamp URL</label>
+                                <input id="input-rfc3161-url" class="settings-input bg-black text-white" type="text"
+                                    value="https://timestamp.digicert.com" onchange="onApiFieldChange('rfc3161_url', this.value)">
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- 5. NOTIFICATION SETTINGS -->
+                <section class="settings-card">
+                    <h2 class="settings-section-title uppercase"><span
+                            class="material-symbols-outlined text-secondary">notifications</span> Notification Settings
+                    </h2>
+                    <div class="grid grid-cols-2 gap-x-12 gap-y-1">
+                        <div class="settings-row">
+                            <span class="label-title">Desktop notifications</span>
+                            <label class="toggle-switch"><input id="toggle-desktop-notifications" type="checkbox" checked onchange="onNotificationToggleChange('desktop_notifications', this.checked)"><span
+                                    class="slider"></span></label>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label-title">Threat detection alert</span>
+                            <label class="toggle-switch"><input id="toggle-threat-detection-alert" type="checkbox" checked onchange="onNotificationToggleChange('threat_detection_alert', this.checked)"><span
+                                    class="slider"></span></label>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label-title">Scan complete notification</span>
+                            <label class="toggle-switch"><input id="toggle-scan-complete-notification" type="checkbox" checked onchange="onNotificationToggleChange('scan_complete_notification', this.checked)"><span
+                                    class="slider"></span></label>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label-title">Quarantine activity alert</span>
+                            <label class="toggle-switch"><input id="toggle-quarantine-activity-alert" type="checkbox" checked onchange="onNotificationToggleChange('quarantine_activity_alert', this.checked)"><span
+                                    class="slider"></span></label>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label-title">Notification sound</span>
+                            <label class="toggle-switch"><input id="toggle-notification-sound" type="checkbox" onchange="onNotificationToggleChange('notification_sound', this.checked)"><span class="slider"></span></label>
+                        </div>
+                    </div>
+                </section>
+                <!-- 6. STORAGE SETTINGS -->
+                <section class="settings-card">
+                    <h2 class="settings-section-title uppercase"><span
+                            class="material-symbols-outlined text-primary">database</span> Storage &amp; Retention</h2>
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="label-title mb-2 block">Reports Location</label>
+                                <input id="input-reports-location" class="settings-input bg-black text-white" type="text" value="D:\Shadow-trace\reports" onchange="onStorageFieldChange('reports_location', this.value)">
+                            </div>
+                            <div>
+                                <label class="label-title mb-2 block">Quarantine Location</label>
+                                <input id="input-quarantine-location" class="settings-input bg-black text-white" type="text" value="D:\Shadow-trace\quarantine" onchange="onStorageFieldChange('quarantine_location', this.value)">
+                            </div>
+                            <div>
+                                <label class="label-title mb-2 block">Sandbox Location</label>
+                                <input id="input-sandbox-location" class="settings-input bg-black text-white" type="text" value="D:\Shadow-trace\sandbox" onchange="onStorageFieldChange('sandbox_location', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- 7. ADVANCED SETTINGS -->
+                <section class="settings-card border-error/20">
+                    <h2 class="settings-section-title uppercase text-error"><span
+                            class="material-symbols-outlined text-error">settings_suggest</span> Advanced Settings</h2>
+                    <div class="space-y-6">
+                        <div class="grid gap-8 grid-cols-2">
+                            <div>
+                                <label class="label-title mb-2 block">ClamAV Host and Port</label>
+                                <input id="input-clamav-host-port" class="settings-input bg-black text-white" type="text" value="127.0.0.1:3310" onchange="onAdvancedFieldChange('clamav_host_port', this.value)">
+                            </div>
+                            <div><label class="label-title mb-2 block">DIAGNOSTICS</label>
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between"><span
+                                            class="text-[11px] font-medium text-on-surface-variant uppercase tracking-wider">Log
+                                            Level:</span>
+                                        <div
+                                            class="flex border border-outline-variant rounded p-1 bg-surface-container w-[200px]">
+                                            <button id="log-level-info"
+                                                class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded transition-all bg-surface-container-high text-primary shadow-sm cursor-pointer" onclick="setLogLevel(this, 'INFO')">Info</button><button id="log-level-debug"
+                                                class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded transition-all text-on-surface-variant hover:text-primary cursor-pointer" onclick="setLogLevel(this, 'DEBUG')">Debug</button><button id="log-level-error"
+                                                class="flex-1 py-1.5 text-[10px] font-bold uppercase rounded transition-all text-on-surface-variant hover:text-primary cursor-pointer" onclick="setLogLevel(this, 'ERROR')">Error</button>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2"><button onclick="viewSystemLogs()"
+                                            class="flex-1 py-2 bg-surface-container-high border border-outline-variant text-[11px] rounded uppercase font-bold hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer"><span
+                                                class="material-symbols-outlined text-[16px]">folder_open</span> View
+                                            System Logs</button><button
+                                            class="px-4 py-2 bg-error/10 border border-error/20 text-error text-[11px] rounded uppercase font-bold hover:bg-error hover:text-white transition-all cursor-pointer"
+                                            onclick="clearSystemLogs(this)">Clear Logs</button></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-6 border-t border-outline-variant">
+                            <h3 class="text-sm font-semibold uppercase text-primary mb-4">Database</h3>
+                            <div class="grid grid-cols-2 gap-8">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="label-title mb-2 block">Recovery database location</label>
+                                        <div id="display-recovery-db"
+                                            class="settings-input bg-surface-container/50 text-on-surface-variant border-dashed select-all">
+                                            C:/ShadowTrace/Database/recovery.db</div>
+                                    </div>
+                                    <div>
+                                        <label class="label-title mb-2 block">Investigation database location</label>
+                                        <div id="display-investigation-db"
+                                            class="settings-input bg-surface-container/50 text-on-surface-variant border-dashed select-all">
+                                            C:/ShadowTrace/Database/investigation.db</div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col justify-end gap-3">
+                                    <div class="flex flex-col">
+                                        <button id="btn-backup-db" onclick="backupDatabases(this)"
+                                            class="w-full py-2 bg-surface-container-high border border-outline-variant text-[11px] rounded uppercase font-bold hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                                            <span class="material-symbols-outlined text-[16px]">backup</span> Backup
+                                            Databases
+                                        </button>
+                                        <span class="label-desc mt-1">Creates timestamped backup of all
+                                            databases</span>
+                                    </div>
+                                    <button id="btn-view-db-size" onclick="viewDatabaseSizes(this)"
+                                        class="w-full py-2 bg-surface-container-high border border-outline-variant text-[11px] rounded uppercase font-bold hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                                        <span class="material-symbols-outlined text-[16px]">database</span> View
+                                        Database Size
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-6 border-t border-outline-variant flex justify-between items-center">
+                            <div class="label-group">
+                                <span class="label-title text-error">Factory Reset</span>
+                                <span class="label-desc">Wipe all local configurations and revert to default factory
+                                    state. This action cannot be undone.</span>
+                            </div>
+                            <button
+                                class="px-6 py-2 bg-error/10 border border-error/30 text-error rounded-lg hover:bg-error hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
+                                onclick="resetSettings()">Reset All Settings</button>
+                        </div>
+                        <div class="pt-6 border-t border-outline-variant">
+                            <h3 class="text-sm font-semibold uppercase text-primary mb-4">About</h3>
+                            <div class="grid grid-cols-2 gap-y-3">
+                                <div class="flex flex-col">
+                                    <span class="label-desc">Shadow-Trace Version</span>
+                                    <span class="font-code-sm text-[13px] text-on-surface">1.0.0</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="label-desc">Python Version</span>
+                                    <span class="font-code-sm text-[13px] text-on-surface">3.11.4</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="label-desc">PyTorch Version</span>
+                                    <span class="font-code-sm text-[13px] text-on-surface">2.1.0+cu121</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="label-desc">Build Date</span>
+                                    <span class="font-code-sm text-[13px] text-on-surface">2026-07-10</span>
+                                </div>
+                                <div class="flex flex-col col-span-2">
+                                    <span class="label-desc">License Information</span>
+                                    <span class="font-code-sm text-[13px] text-on-surface">Enterprise Forensic License -
+                                        Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <!-- Notification Panel -->
+        <!-- Notification Panel -->
+    <div class="fixed right-0 top-0 h-full w-[380px] glass-panel border-l border-outline-variant z-[60] flex flex-col shadow-2xl"
+        id="notification-panel">
+        <div
+            class="p-stack-lg border-b border-outline-variant flex justify-between items-center bg-surface-container/50">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">notifications_active</span>
+                <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Notifications</h3>
+            </div>
+            <button
+                class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors bg-surface-container-highest p-1 rounded cursor-pointer"
+                onclick="toggleNotifications(event)">close</button>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-stack-md space-y-3" id="notifications-list">
+            <div class="flex items-center justify-center py-12 text-on-surface-variant/40">
+                <span class="material-symbols-outlined animate-spin text-2xl mr-2">progress_activity</span>
+                <span class="font-data-mono text-xs">Loading alerts...</span>
+            </div>
+        </div>
+        <div class="p-stack-md border-t border-outline-variant">
+            <button
+                onclick="clearAllNotifications()"
+                class="w-full py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary transition-all font-code-sm text-[12px] uppercase tracking-widest cursor-pointer hover:bg-surface-container">Clear
+                All History</button>
+        </div>
+    </div>
+    <script>
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+            }
+        }
+        // Notification Panel Logic
+        function toggleNotifications(e) {
+            if (typeof window.auditToggleNotifications === 'function') {
+                return window.auditToggleNotifications(e);
+            }
+            const panel = document.getElementById('notification-panel');
+            if (panel) panel.classList.toggle('open');
+        }
+        // Clock Logic
+        function updateClock() {
+            const now = new Date();
+            const days = now.getDate().toString().padStart(2, '0');
+            const monthsStr = now.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+            const yearsStr = now.getFullYear();
+            const time = now.toLocaleTimeString('en-GB', { hour12: false });
+            const clockEl = document.getElementById('clock');
+            if (clockEl) clockEl.textContent = `${days} ${monthsStr} ${yearsStr} ${time}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+        function toggleMask(icon, inputId) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+        // Monitored Folders State & Management
+        let monitoredFolders = [];
+        try {
+            const cachedSettings = localStorage.getItem('shadowtrace_settings');
+            if (cachedSettings) {
+                const parsed = JSON.parse(cachedSettings);
+                if (Array.isArray(parsed.monitored_folders) && parsed.monitored_folders.length > 0) {
+                    monitoredFolders = parsed.monitored_folders;
+                }
+            }
+        } catch (e) {}
+        let currentLogLevel = "INFO";
+        function renderMonitoredFolders() {
+            const list = document.getElementById('folder-list');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!monitoredFolders || monitoredFolders.length === 0) {
+                list.innerHTML = '<div class="text-xs text-on-surface-variant italic py-2">No monitored folders added. Active real-time ingestion is idle.</div>';
+                return;
+            }
+            monitoredFolders.forEach((folder, idx) => {
+                const row = document.createElement('div');
+                row.className = 'flex gap-2 items-center';
+                const safeFolder = String(folder).replace(/"/g, '&quot;');
+                row.innerHTML = `
+                    <div class="flex-1 rounded text-on-surface font-code-sm text-[13px] truncate" title="${safeFolder}">${safeFolder}</div>
+                    <button class="p-2 text-error hover:bg-error/10 rounded transition-colors material-symbols-outlined cursor-pointer text-[18px]" 
+                            title="Stop monitoring this directory" onclick="removeMonitoredFolder(${idx})">delete</button>
+                `;
+                list.appendChild(row);
+            });
+        }
+        async function removeMonitoredFolder(idx) {
+            if (idx < 0 || idx >= monitoredFolders.length) return;
+            const removed = monitoredFolders[idx];
+            monitoredFolders.splice(idx, 1);
+            renderMonitoredFolders();
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.remove_monitored_folder) {
+                    await window.pywebview.api.remove_monitored_folder(removed);
+                }
+            } catch (err) {
+                console.error("API error removing monitored folder:", err);
+            }
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                window.logUserAction('SETTINGS_CHANGE', 'Monitored Folders', 'Removed directory from real-time monitoring: ' + removed, 'warning');
+            }
+        }
+        function toggleAddFolder() {
+            const container = document.getElementById('add-folder-container');
+            if (container) {
+                container.classList.toggle('hidden');
+                if (!container.classList.contains('hidden')) {
+                    const input = document.getElementById('new-folder-path');
+                    if (input) input.focus();
+                }
+            }
+        }
+        async function browseFolderForMonitored() {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.browse_folder) {
+                    const currentVal = document.getElementById('new-folder-path')?.value || '';
+                    const raw = await window.pywebview.api.browse_folder(currentVal);
+                    const res = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    if (res && res.folder) {
+                        const input = document.getElementById('new-folder-path');
+                        if (input) input.value = res.folder;
+                    }
+                }
+            } catch (err) {
+                console.error("Browse folder error:", err);
+            }
+        }
+        async function saveNewFolder() {
+            const input = document.getElementById('new-folder-path');
+            if (!input) return;
+            const path = input.value.trim();
+            if (!path) return;
+            const normalized = path.replace(/\//g, '\\').toLowerCase();
+            const exists = monitoredFolders.some(f => f.replace(/\//g, '\\').toLowerCase() === normalized);
+            if (!exists) {
+                monitoredFolders.push(path);
+                renderMonitoredFolders();
+                try {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.add_monitored_folder) {
+                        await window.pywebview.api.add_monitored_folder(path);
+                    }
+                } catch (err) {
+                    console.error("API error adding monitored folder:", err);
+                }
+                await saveSettingsSilently();
+                if (window.logUserAction) {
+                    window.logUserAction('SETTINGS_CHANGE', 'Monitored Folders', 'Added directory for real-time monitoring: ' + path, 'normal');
+                }
+            }
+            input.value = '';
+            toggleAddFolder();
+        }
+        async function onScanToggleChange(key, value) {
+            if (key === 'always_on_monitoring') {
+                localStorage.setItem('always_on_monitoring', value ? 'true' : 'false');
+                if (typeof window.updateSidebarMonitoring === 'function') {
+                    window.updateSidebarMonitoring(value);
+                }
+                window.dispatchEvent(new CustomEvent('shadowtrace:monitoring_changed', { detail: { active: value } }));
+            }
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                let title = key.replace(/_/g, ' ').toUpperCase();
+                let msg = `${title}: ${value ? 'ENABLED' : 'DISABLED'}`;
+                if (key === 'always_on_monitoring') {
+                    title = 'Always ON Monitoring';
+                    msg = value ? 'Always ON background monitoring ENABLED (device startup persistence active)' : 'Always ON background monitoring DISABLED';
+                } else if (key === 'auto_escalate_lsb') {
+                    title = 'Auto-escalate on LSB executable';
+                    msg = value ? 'Auto-escalate on LSB executable ENABLED (bypasses permission prompt for full steg scan)' : 'Auto-escalate on LSB executable DISABLED (prompts user)';
+                } else if (key === 'ask_user_before_steg') {
+                    title = 'Steganography Scan Confirmation';
+                    msg = value ? 'Examiner confirmation enforced before deep steg scan' : 'Deep steganography scan runs automatically';
+                } else if (key === 'auto_quarantine_malware') {
+                    title = 'Malware Quarantine';
+                    msg = value ? 'Automated quarantine vault containment enabled' : 'Automated malware quarantine disabled';
+                } else if (key === 'auto_quarantine_stego') {
+                    title = 'Steganography Quarantine';
+                    msg = value ? 'Automated stego media containment enabled' : 'Automated stego media quarantine disabled';
+                }
+                window.logUserAction('SETTINGS_CHANGE', title, msg, value ? 'normal' : 'warning');
+            }
+        }
+        async function onReportToggleChange(key, value) {
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                let title = 'Report Settings';
+                let msg = '';
+                if (key === 'auto_generate_summary_report') {
+                    title = 'Executive Summary Report';
+                    msg = value ? 'Auto-generate executive summary report ENABLED' : 'Auto-generate executive summary report DISABLED';
+                } else if (key === 'auto_generate_evidence_package') {
+                    title = 'Forensic Evidence Package';
+                    msg = value ? 'Auto-generate cryptographic evidence package (ZIP/RFC 3161) ENABLED' : 'Auto-generate evidence package DISABLED';
+                } else if (key === 'include_system_context') {
+                    title = 'Examination Environment Context';
+                    msg = value ? 'System context & environment telemetry INCLUDED in reports' : 'System context EXCLUDED from reports';
+                }
+                window.logUserAction('SETTINGS_CHANGE', title, msg, value ? 'normal' : 'warning');
+            }
+        }
+        async function onReportFieldChange(key, value) {
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                let title = key === 'report_output_folder' ? 'Default Report Folder' : 'Default Examiner Signature';
+                let msg = key === 'report_output_folder' ? `Default report output folder set to: ${value}` : `Examiner signature updated to: ${value}`;
+                window.logUserAction('SETTINGS_CHANGE', title, msg, 'normal');
+            }
+        }
+        async function onApiFieldChange(key, value) {
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                let title = 'API Configuration';
+                let msg = '';
+                if (key === 'vt_api_key') {
+                    title = 'VirusTotal API Key';
+                    msg = 'VirusTotal API key updated';
+                } else if (key === 'ha_api_key') {
+                    title = 'Hybrid Analysis API Key';
+                    msg = 'Hybrid Analysis API key updated';
+                } else if (key === 'rfc3161_url') {
+                    title = 'RFC 3161 Timestamp URL';
+                    msg = `RFC 3161 timestamp authority set to: ${value}`;
+                }
+                window.logUserAction('SETTINGS_CHANGE', title, msg, 'normal');
+            }
+        }
+        async function onNotificationToggleChange(key, value) {
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                let title = key.replace(/_/g, ' ').toUpperCase();
+                let msg = `${title}: ${value ? 'ENABLED' : 'DISABLED'}`;
+                window.logUserAction('SETTINGS_CHANGE', title, msg, value ? 'normal' : 'warning');
+            }
+        }
+        async function onStorageFieldChange(key, value) {
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                let title = key.replace(/_/g, ' ').toUpperCase();
+                window.logUserAction('SETTINGS_CHANGE', title, `Storage path updated to: ${value}`, 'normal');
+            }
+        }
+
+        async function onAdvancedFieldChange(key, value) {
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                window.logUserAction('SETTINGS_CHANGE', 'ClamAV Host/Port', `ClamAV connection updated to: ${value}`, 'normal');
+            }
+        }
+        let isApplyingSettings = false;
+
+        function updateOfflineUi(isOffline) {
+            const vtHash = document.getElementById('toggle-vt-hash-only');
+            const vtUpload = document.getElementById('toggle-vt-full-upload');
+            const haHash = document.getElementById('toggle-ha-hash-only');
+            const haUpload = document.getElementById('toggle-ha-full-upload');
+            if (isOffline) {
+                if (vtHash) vtHash.disabled = true;
+                if (vtUpload) vtUpload.disabled = true;
+                if (haHash) haHash.disabled = true;
+                if (haUpload) haUpload.disabled = true;
+            } else {
+                if (vtHash) vtHash.disabled = false;
+                if (vtUpload) vtUpload.disabled = false;
+                if (haHash) haHash.disabled = false;
+                if (haUpload) haUpload.disabled = false;
+            }
+        }
+
+        async function onOfflineModeToggle(isOffline) {
+            updateOfflineUi(isOffline);
+            if (isApplyingSettings) return;
+            await saveSettingsSilently();
+            if (window.logUserAction) {
+                window.logUserAction(
+                    'SETTINGS_CHANGE',
+                    'Offline Mode',
+                    isOffline ? 'Offline mode ENABLED: Cloud scanning suppressed (VirusTotal & Hybrid Analysis deactivated)' : 'Offline mode DISABLED: Cloud threat intelligence enabled',
+                    'warning'
+                );
+            }
+        }
+
+        function getSettingsPayload() {
+            const isOffline = Boolean((document.getElementById('offline-mode-toggle') || document.getElementById('toggle-offline-mode'))?.checked);
+            const vtHash = Boolean(document.getElementById('toggle-vt-hash-only')?.checked);
+            const vtUpload = Boolean(document.getElementById('toggle-vt-full-upload')?.checked);
+            const haHash = Boolean(document.getElementById('toggle-ha-hash-only')?.checked);
+            const haUpload = Boolean(document.getElementById('toggle-ha-full-upload')?.checked);
+            const vtEnabled = Boolean(vtHash || vtUpload);
+            const vtMode = vtUpload ? 'full_upload' : 'hash_only';
+            const haEnabled = Boolean(haHash || haUpload);
+            const haMode = haUpload ? 'full_upload' : 'hash_only';
+            return {
+                monitored_folders: monitoredFolders,
+                always_on_monitoring: Boolean(document.getElementById('toggle-always-on')?.checked),
+                ask_user_before_steg: Boolean(document.getElementById('toggle-ask-user-before-steg')?.checked),
+                auto_escalate_lsb: Boolean(document.getElementById('toggle-auto-escalate-lsb')?.checked),
+                offline_mode: isOffline,
+                vt_scan_enabled: vtEnabled,
+                vt_upload_mode: vtMode,
+                ha_scan_enabled: haEnabled,
+                ha_upload_mode: haMode,
+                auto_quarantine_malware: Boolean(document.getElementById('toggle-auto-quarantine-malware')?.checked),
+                auto_quarantine_stego: Boolean(document.getElementById('toggle-auto-quarantine-stego')?.checked),
+                report_output_folder: document.getElementById('input-report-folder')?.value.trim() || '',
+                auto_generate_summary_report: Boolean(document.getElementById('toggle-auto-generate-summary-report')?.checked),
+                auto_generate_evidence_package: Boolean(document.getElementById('toggle-auto-generate-evidence-package')?.checked),
+                include_system_context: Boolean(document.getElementById('toggle-include-system-context')?.checked),
+                examiner_signature: document.getElementById('input-examiner-signature')?.value.trim() || '',
+                vt_api_key: document.getElementById('vt-api')?.value.trim() || '',
+                ha_api_key: document.getElementById('ha-api')?.value.trim() || '',
+                rfc3161_url: document.getElementById('input-rfc3161-url')?.value.trim() || '',
+                desktop_notifications: Boolean(document.getElementById('toggle-desktop-notifications')?.checked),
+                threat_detection_alert: Boolean(document.getElementById('toggle-threat-detection-alert')?.checked),
+                scan_complete_notification: Boolean(document.getElementById('toggle-scan-complete-notification')?.checked),
+                quarantine_activity_alert: Boolean(document.getElementById('toggle-quarantine-activity-alert')?.checked),
+                notification_sound: Boolean(document.getElementById('toggle-notification-sound')?.checked),
+                reports_location: document.getElementById('input-reports-location')?.value.trim() || '',
+                quarantine_location: document.getElementById('input-quarantine-location')?.value.trim() || '',
+                sandbox_location: document.getElementById('input-sandbox-location')?.value.trim() || '',
+                clamav_host_port: document.getElementById('input-clamav-host-port')?.value.trim() || '',
+                log_level: currentLogLevel
+            };
+        }
+
+        async function saveSettingsSilently() {
+            if (isApplyingSettings) return;
+            const payload = getSettingsPayload();
+            // 1. Immediately persist to localStorage synchronously
+            try {
+                localStorage.setItem('shadowtrace_settings', JSON.stringify(payload));
+            } catch (e) {
+                console.error("Local storage silent save error:", e);
+            }
+            // 2. Persist to backend pywebview API (settings.json and .env on disk)
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.save_settings) {
+                    await window.pywebview.api.save_settings(JSON.stringify(payload));
+                }
+            } catch (e) {
+                console.error("Silent save error:", e);
+            }
+        }
+
+        async function handleVtToggle(mode) {
+            const hashOnly = document.getElementById('toggle-vt-hash-only');
+            const fullUpload = document.getElementById('toggle-vt-full-upload');
+            if (mode === 'hash' && hashOnly) {
+                if (hashOnly.checked) {
+                    if (fullUpload) fullUpload.checked = false;
+                }
+            } else if (mode === 'upload' && fullUpload) {
+                if (fullUpload.checked) {
+                    if (hashOnly) hashOnly.checked = false;
+                }
+            }
+            await saveSettingsSilently();
+            let statusDesc = "VirusTotal disabled";
+            if (fullUpload && fullUpload.checked) statusDesc = "VirusTotal full file upload enabled";
+            else if (hashOnly && hashOnly.checked) statusDesc = "VirusTotal hash lookup only enabled";
+            if (window.logUserAction) {
+                window.logUserAction('SETTINGS_CHANGE', 'VirusTotal Scan Mode', statusDesc, 'normal');
+            }
+        }
+
+        async function handleHaToggle(mode) {
+            const hashOnly = document.getElementById('toggle-ha-hash-only');
+            const fullUpload = document.getElementById('toggle-ha-full-upload');
+            if (mode === 'hash' && hashOnly) {
+                if (hashOnly.checked) {
+                    if (fullUpload) fullUpload.checked = false;
+                }
+            } else if (mode === 'upload' && fullUpload) {
+                if (fullUpload.checked) {
+                    if (hashOnly) hashOnly.checked = false;
+                }
+            }
+            await saveSettingsSilently();
+            let statusDesc = "Hybrid Analysis disabled";
+            if (fullUpload && fullUpload.checked) statusDesc = "Hybrid Analysis full file upload enabled";
+            else if (hashOnly && hashOnly.checked) statusDesc = "Hybrid Analysis hash lookup only enabled";
+            if (window.logUserAction) {
+                window.logUserAction('SETTINGS_CHANGE', 'Hybrid Analysis Mode', statusDesc, 'normal');
+            }
+        }
+
+        function setLogLevel(btn, level) {
+            currentLogLevel = level || btn.textContent.trim().toUpperCase();
+            const group = btn.parentElement;
+            group.querySelectorAll('button').forEach(b => {
+                b.classList.remove('bg-surface-container-high', 'text-primary', 'shadow-sm');
+                b.classList.add('text-on-surface-variant', 'hover:text-primary');
+            });
+            btn.classList.add('bg-surface-container-high', 'text-primary', 'shadow-sm');
+            btn.classList.remove('text-on-surface-variant', 'hover:text-primary');
+            if (window.logUserAction) {
+                window.logUserAction('SETTINGS_CHANGE', 'Logging Policy', 'Log level adjusted to ' + currentLogLevel, 'warning');
+            }
+        }
+
+        function highlightLogLevel(level) {
+            const mapping = {
+                'INFO': 'log-level-info',
+                'DEBUG': 'log-level-debug',
+                'ERROR': 'log-level-error'
+            };
+            const btnId = mapping[level.toUpperCase()] || 'log-level-info';
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                const group = btn.parentElement;
+                group.querySelectorAll('button').forEach(b => {
+                    b.classList.remove('bg-surface-container-high', 'text-primary', 'shadow-sm');
+                    b.classList.add('text-on-surface-variant', 'hover:text-primary');
+                });
+                btn.classList.add('bg-surface-container-high', 'text-primary', 'shadow-sm');
+                btn.classList.remove('text-on-surface-variant', 'hover:text-primary');
+                currentLogLevel = level.toUpperCase();
+            }
+        }
+
+        function applySettingsData(data) {
+            if (!data || typeof data !== 'object') return;
+            isApplyingSettings = true;
+            try {
+                // 1. Monitoring Folders
+                if (Array.isArray(data.monitored_folders)) {
+                    monitoredFolders = data.monitored_folders;
+                    renderMonitoredFolders();
+                }
+
+                // 2. Scan Settings
+                const alwaysOnToggle = document.getElementById('toggle-always-on');
+                if (alwaysOnToggle && data.always_on_monitoring !== undefined) {
+                    alwaysOnToggle.checked = Boolean(data.always_on_monitoring);
+                    localStorage.setItem('always_on_monitoring', alwaysOnToggle.checked ? 'true' : 'false');
+                    if (typeof window.updateSidebarMonitoring === 'function') {
+                        window.updateSidebarMonitoring(alwaysOnToggle.checked);
+                    }
+                }
+
+                const askSteg = document.getElementById('toggle-ask-user-before-steg');
+                if (askSteg && data.ask_user_before_steg !== undefined) {
+                    askSteg.checked = Boolean(data.ask_user_before_steg);
+                }
+
+                const autoLsb = document.getElementById('toggle-auto-escalate-lsb');
+                if (autoLsb && data.auto_escalate_lsb !== undefined) {
+                    autoLsb.checked = Boolean(data.auto_escalate_lsb);
+                }
+
+                const offlineMode = (document.getElementById('offline-mode-toggle') || document.getElementById('toggle-offline-mode'));
+                if (offlineMode && data.offline_mode !== undefined) {
+                    offlineMode.checked = Boolean(data.offline_mode);
+                    updateOfflineUi(offlineMode.checked);
+                }
+
+                // VirusTotal Toggles
+                const vtHash = document.getElementById('toggle-vt-hash-only');
+                const vtUpload = document.getElementById('toggle-vt-full-upload');
+                const vtActive = (data.vt_scan_enabled !== false);
+                if (!vtActive) {
+                    if (vtHash) vtHash.checked = false;
+                    if (vtUpload) vtUpload.checked = false;
+                } else if (data.vt_upload_mode === 'full_upload') {
+                    if (vtUpload) vtUpload.checked = true;
+                    if (vtHash) vtHash.checked = false;
+                } else {
+                    if (vtHash) vtHash.checked = true;
+                    if (vtUpload) vtUpload.checked = false;
+                }
+
+                // Hybrid Analysis Toggles
+                const haHash = document.getElementById('toggle-ha-hash-only');
+                const haUpload = document.getElementById('toggle-ha-full-upload');
+                const haActive = (data.ha_scan_enabled !== false);
+                if (!haActive) {
+                    if (haHash) haHash.checked = false;
+                    if (haUpload) haUpload.checked = false;
+                } else if (data.ha_upload_mode === 'full_upload') {
+                    if (haUpload) haUpload.checked = true;
+                    if (haHash) haHash.checked = false;
+                } else {
+                    if (haHash) haHash.checked = true;
+                    if (haUpload) haUpload.checked = false;
+                }
+
+                const autoMal = document.getElementById('toggle-auto-quarantine-malware');
+                if (autoMal && data.auto_quarantine_malware !== undefined) {
+                    autoMal.checked = Boolean(data.auto_quarantine_malware);
+                }
+
+                const autoSteg = document.getElementById('toggle-auto-quarantine-stego');
+                if (autoSteg && data.auto_quarantine_stego !== undefined) {
+                    autoSteg.checked = Boolean(data.auto_quarantine_stego);
+                }
+
+                // 3. Report Settings
+                const repFolder = document.getElementById('input-report-folder');
+                if (repFolder && data.report_output_folder) repFolder.value = data.report_output_folder;
+
+                const autoSum = document.getElementById('toggle-auto-generate-summary-report');
+                if (autoSum && data.auto_generate_summary_report !== undefined) {
+                    autoSum.checked = Boolean(data.auto_generate_summary_report);
+                }
+
+                const autoEv = document.getElementById('toggle-auto-generate-evidence-package');
+                if (autoEv && data.auto_generate_evidence_package !== undefined) {
+                    autoEv.checked = Boolean(data.auto_generate_evidence_package);
+                }
+
+                const sysCtx = document.getElementById('toggle-include-system-context');
+                if (sysCtx && data.include_system_context !== undefined) {
+                    sysCtx.checked = Boolean(data.include_system_context);
+                }
+
+                const exSig = document.getElementById('input-examiner-signature');
+                if (exSig && data.examiner_signature) exSig.value = data.examiner_signature;
+
+                // 4. API Settings
+                const vtApi = document.getElementById('vt-api');
+                if (vtApi && data.vt_api_key) vtApi.value = data.vt_api_key;
+
+                const haApi = document.getElementById('ha-api');
+                if (haApi && data.ha_api_key) haApi.value = data.ha_api_key;
+
+                const rfcUrl = document.getElementById('input-rfc3161-url');
+                if (rfcUrl && data.rfc3161_url) rfcUrl.value = data.rfc3161_url;
+
+                // 5. Notifications
+                const notDesk = document.getElementById('toggle-desktop-notifications');
+                if (notDesk && data.desktop_notifications !== undefined) {
+                    notDesk.checked = Boolean(data.desktop_notifications);
+                }
+
+                const notThreat = document.getElementById('toggle-threat-detection-alert');
+                if (notThreat && data.threat_detection_alert !== undefined) {
+                    notThreat.checked = Boolean(data.threat_detection_alert);
+                }
+
+                const notScan = document.getElementById('toggle-scan-complete-notification');
+                if (notScan && data.scan_complete_notification !== undefined) {
+                    notScan.checked = Boolean(data.scan_complete_notification);
+                }
+
+                const notQuar = document.getElementById('toggle-quarantine-activity-alert');
+                if (notQuar && data.quarantine_activity_alert !== undefined) {
+                    notQuar.checked = Boolean(data.quarantine_activity_alert);
+                }
+
+                const notSnd = document.getElementById('toggle-notification-sound');
+                if (notSnd && data.notification_sound !== undefined) {
+                    notSnd.checked = Boolean(data.notification_sound);
+                }
+
+                // 6. Storage & Retention
+                const repLoc = document.getElementById('input-reports-location');
+                if (repLoc && data.reports_location) repLoc.value = data.reports_location;
+
+                const quarLoc = document.getElementById('input-quarantine-location');
+                if (quarLoc && data.quarantine_location) quarLoc.value = data.quarantine_location;
+
+                const sandLoc = document.getElementById('input-sandbox-location');
+                if (sandLoc && data.sandbox_location) sandLoc.value = data.sandbox_location;
+
+                // 7. Advanced
+                const clamInput = document.getElementById('input-clamav-host-port');
+                if (clamInput && data.clamav_host_port) clamInput.value = data.clamav_host_port;
+
+                if (data.log_level) highlightLogLevel(data.log_level);
+
+                const recDb = document.getElementById('display-recovery-db');
+                if (recDb && data.recovery_db_path) recDb.textContent = data.recovery_db_path;
+
+                const invDb = document.getElementById('display-investigation-db');
+                if (invDb && data.investigation_db_path) invDb.textContent = data.investigation_db_path;
+
+            } catch (err) {
+                console.error("Error applying settings to UI:", err);
+            } finally {
+                isApplyingSettings = false;
+            }
+        }
+
+        // Two-stage load: instant hydration from localStorage + authoritative sync from pywebview API
+        async function loadSettings() {
+            // 1. Instant hydration from localStorage
+            try {
+                const saved = localStorage.getItem('shadowtrace_settings');
+                if (saved) {
+                    const localData = JSON.parse(saved);
+                    applySettingsData(localData);
+                }
+            } catch (e) {
+                console.error("Local storage hydration error:", e);
+            }
+
+            // 2. Authoritative sync from pywebview backend API
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.get_settings) {
+                    const raw = await window.pywebview.api.get_settings();
+                    const data = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    if (data && typeof data === 'object') {
+                        applySettingsData(data);
+                        localStorage.setItem('shadowtrace_settings', JSON.stringify(getSettingsPayload()));
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading settings from pywebview API:", err);
+            }
+        }
+
+        // Save Settings to Backend manually
+        async function saveSettings() {
+            const btn = document.getElementById('btn-save-settings');
+            const saveIcon = document.getElementById('save-icon');
+            const saveText = document.getElementById('save-btn-text');
+            if (saveText) saveText.textContent = "SAVING...";
+            const payload = getSettingsPayload();
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.save_settings) {
+                    await window.pywebview.api.save_settings(JSON.stringify(payload));
+                }
+                localStorage.setItem('shadowtrace_settings', JSON.stringify(payload));
+                if (window.logUserAction) {
+                    window.logUserAction('SETTINGS_CHANGE', 'System Configuration', 'Saved all forensic system parameters', 'normal');
+                }
+                // Visual Feedback on Save button
+                if (saveIcon) saveIcon.textContent = "check_circle";
+                if (saveText) saveText.textContent = "SAVED";
+                if (btn) btn.classList.replace('bg-secondary', 'bg-secondary-container');
+                setTimeout(() => {
+                    if (saveIcon) saveIcon.textContent = "save";
+                    if (saveText) saveText.textContent = "Save Changes";
+                    if (btn) btn.classList.replace('bg-secondary-container', 'bg-secondary');
+                }, 2000);
+            } catch (err) {
+                console.error("Save error:", err);
+                if (saveText) saveText.textContent = "Save Changes";
+                alert("Error saving settings: " + err.message);
+            }
+        }
+
+        // Browse Folder Picker
+        async function browseFolder(targetInputId) {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.browse_folder) {
+                    const currentVal = document.getElementById(targetInputId)?.value || '';
+                    const raw = await window.pywebview.api.browse_folder(currentVal);
+                    const res = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    if (res && res.folder) {
+                        const el = document.getElementById(targetInputId);
+                        if (el) el.value = res.folder;
+                        await saveSettingsSilently();
+                        if (window.logUserAction) {
+                            window.logUserAction('SETTINGS_CHANGE', 'Output Directory', 'Configured folder: ' + res.folder, 'normal');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Folder picker error:", err);
+            }
+        }
+
+        // Backup Databases
+        async function backupDatabases(btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span> BACKING UP...';
+            btn.disabled = true;
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.backup_databases) {
+                    const raw = await window.pywebview.api.backup_databases();
+                    const res = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    if (res && res.success) {
+                        alert(`Database Backup Complete!\n\nLocation: ${res.backup_dir}\nTimestamp: ${res.timestamp}\nBacked up: ${res.files.join(', ')}`);
+                        if (window.logUserAction) {
+                            window.logUserAction('BACKUP_DATABASE', 'Database Backup', `Created backup containing ${res.files.length} databases`, 'normal');
+                        }
+                    } else {
+                        alert("Backup failed: " + (res.error || "Unknown error"));
+                    }
+                } else {
+                    alert("Backup command dispatched.");
+                }
+            } catch (err) {
+                alert("Backup error: " + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // View Database Sizes
+        async function viewDatabaseSizes(btn) {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.get_database_sizes) {
+                    const raw = await window.pywebview.api.get_database_sizes();
+                    const res = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    if (res && res.databases) {
+                        let msg = "FORENSIC DATABASE STORAGE ANALYSIS\n" + "=".repeat(40) + "\n\n";
+                        for (const [name, info] of Object.entries(res.databases)) {
+                            msg += `${name}:\n  Size: ${info.formatted}\n  Path: ${info.path}\n\n`;
+                        }
+                        msg += "=".repeat(40) + `\nTOTAL DISK FOOTPRINT: ${res.total_formatted}`;
+                        alert(msg);
+                    }
+                }
+            } catch (err) {
+                alert("Error fetching database sizes: " + err.message);
+            }
+        }
+
+        // View System Logs
+        async function viewSystemLogs() {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.view_system_logs) {
+                    await window.pywebview.api.view_system_logs();
+                    if (window.logUserAction) {
+                        window.logUserAction('SETTINGS_CHANGE', 'System Logs', 'Opened logs explorer', 'normal');
+                    }
+                }
+            } catch (err) {
+                console.error("View logs error:", err);
+            }
+        }
+
+        // Clear System Logs
+        async function clearSystemLogs(btn) {
+            if (btn.innerText === 'CLEAR LOGS') {
+                btn.innerText = 'CONFIRM?';
+                btn.classList.add('bg-error', 'text-white');
+                btn._resetTimeout = setTimeout(() => {
+                    btn.innerText = 'CLEAR LOGS';
+                    btn.classList.remove('bg-error', 'text-white');
+                }, 3500);
+            } else {
+                clearTimeout(btn._resetTimeout);
+                btn.innerText = 'CLEARING...';
+                try {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.clear_system_logs) {
+                        const raw = await window.pywebview.api.clear_system_logs();
+                        const res = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                        alert(`Logs Cleared Successfully.\n${res.count || 0} log file(s) truncated to 0 bytes.`);
+                    } else {
+                        alert("Logs cleared successfully.");
+                    }
+                } catch (err) {
+                    alert("Error clearing logs: " + err.message);
+                } finally {
+                    btn.innerText = 'CLEAR LOGS';
+                    btn.classList.remove('bg-error', 'text-white');
+                }
+            }
+        }
+
+        // Factory Reset Settings
+        async function resetSettings() {
+            if (confirm("CRITICAL WARNING: Are you sure you want to reset all system settings to default? This will wipe your API keys, monitoring paths, and custom retention rules. This action cannot be undone.")) {
+                try {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.reset_settings) {
+                        await window.pywebview.api.reset_settings();
+                    }
+                    localStorage.removeItem('shadowtrace_settings');
+                    localStorage.removeItem('always_on_monitoring');
+                    alert("Settings have been reverted to factory defaults.");
+                    await loadSettings();
+                } catch (err) {
+                    alert("Error during reset: " + err.message);
+                }
+            }
+        }
+
+        // Guarantee state persistence on beforeunload
+        window.addEventListener('beforeunload', () => {
+            if (!isApplyingSettings) {
+                try {
+                    const payload = getSettingsPayload();
+                    localStorage.setItem('shadowtrace_settings', JSON.stringify(payload));
+                } catch (e) {}
+            }
+        });
+
+        // Initialize immediately, on DOMContentLoaded, on pywebviewready, and via polling bridge
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadSettings);
+        } else {
+            loadSettings();
+        }
+
+        window.addEventListener('pywebviewready', loadSettings);
+
+        let st_attempts = 0;
+        let st_poll = setInterval(async () => {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_settings) {
+                clearInterval(st_poll);
+                await loadSettings();
+            }
+            if (++st_attempts > 40) clearInterval(st_poll);
+        }, 100);
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "model": "ALASKA2_EfficientNetB0",
+  "accuracy": 0.6521,
+  "f1_score": 0.6978,
+  "auc_roc": 0.6161,
+  "best_val_auc": 0.6161,
+  "detects": [
+    "JMiPOD",
+    "JUNIWARD",
+    "UERD"
+  ],
+  "role_in_shadow_trace": "Tier1B adaptive stego primary"
+}

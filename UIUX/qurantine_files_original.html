@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html class="dark" lang="en" style="width: 1280px; height: 1344px; overflow: hidden; position: relative;">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SHADOW-TRACE | Forensic Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Geist:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#313030",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#27ae60",
+                        "on-primary-container": "#636565",
+                        "on-surface": "#f0f0f0",
+                        "on-secondary": "#00391a",
+                        "surface-variant": "#353534",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim": "#c6c6c7",
+                        "on-secondary-container": "#003115",
+                        "primary-fixed": "#e2e2e2",
+                        "tertiary-fixed": "#ffddb9",
+                        "on-tertiary": "#472a00",
+                        "surface-tint": "#c6c6c7",
+                        "on-surface-variant": "#888888",
+                        "on-primary-fixed": "#1a1c1c",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#00210c",
+                        "on-primary": "#2f3131",
+                        "on-tertiary-fixed": "#2b1700",
+                        "on-tertiary-container": "#8e5800",
+                        "inverse-primary": "#5d5f5f",
+                        "secondary-fixed-dim": "#27ae60",
+                        "on-secondary-fixed-variant": "#005228",
+                        "primary": "#ffffff",
+                        "surface-dim": "#111111",
+                        "primary-container": "#e2e2e2",
+                        "outline-variant": "#333333",
+                        "tertiary-fixed-dim": "#ffb961",
+                        "surface-container": "#1c1c1c",
+                        "tertiary": "#ffffff",
+                        "surface": "#111111",
+                        "surface-container-highest": "#242424",
+                        "surface-bright": "#3a3939",
+                        "on-background": "#f0f0f0",
+                        "outline": "#333333",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed": "#7efba4",
+                        "error": "#e74c3c",
+                        "warning": "#f39c12",
+                        "on-primary-fixed-variant": "#454747",
+                        "background": "#111111",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#27ae60",
+                        "tertiary-container": "#ffddb9",
+                        "on-tertiary-fixed-variant": "#663e00",
+                        "surface-container-low": "#1c1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "10px",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin-page": "40px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-md": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-sm": ["Geist"],
+                        "body-lg": ["Geist"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #111111;
+            color: #f0f0f0;
+            font-family: 'Geist', sans-serif;
+            overflow: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111111;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 10px;
+        }
+
+        .graph-bar {
+            transition: height 0.3s ease, background-color 0.3s ease, opacity 0.2s ease;
+        }
+
+        .active-filter {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+        }
+
+        .stego-badge {
+            background-color: #e74c3c;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .sidebar-link-active {
+            color: #ffffff;
+            background-color: #1c1c1c;
+            border-right: 2px solid #ffffff;
+        }
+
+        .y-axis-grid-line {
+            border-top: 1px solid rgba(51, 51, 51, 0.4);
+        }
+
+        /* Slide-in Panel Styles */
+        #notification-panel {
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #notification-panel.open {
+            transform: translateX(0);
+        }
+
+        .glass-panel {
+            background-color: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Modal Animation Styles */
+        #queue-modal-overlay,
+        #calendar-modal-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #queue-modal-overlay.open,
+        #calendar-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #queue-modal {
+            transform: scale(0.9);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+
+        /* Shutter door animation for calendar */
+        #calendar-modal {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+
+        #queue-modal-overlay.open #queue-modal {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        #calendar-modal-overlay.open #calendar-modal {
+            transform: scaleY(1);
+            opacity: 1;
+        }
+
+        /* Sidebar Transition */
+        #main-sidebar {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #main-sidebar.collapsed {
+            width: 64px;
+        }
+
+        #main-sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        #main-sidebar.collapsed .sidebar-monitoring {
+            display: none;
+        }
+
+        #main-sidebar.collapsed nav button {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        #main-sidebar.collapsed nav button span.material-symbols-outlined {
+            margin-right: 0;
+        }
+
+        #toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        #main-sidebar.collapsed #toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Graph Slide Animation */
+        .graph-slide-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .graph-view {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+
+        .slide-out-left {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .slide-out-right {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .slide-in-right {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .slide-in-left {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .slide-active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Calendar specific styles */
+        .calendar-day {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .calendar-day:hover {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+        }
+
+        .calendar-day.selected {
+            background-color: #27ae60 !important;
+            color: #ffffff !important;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        /* Dropdown Animation */
+        .dropdown-animate {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .dropdown-animate.open {
+            transform: scaleY(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .dropdown-trigger span.material-symbols-outlined {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-trigger.active span.material-symbols-outlined {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface flex flex-col min-h-screen">
+    <!-- Modal Queue Overlay -->
+    <div class="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-stack-lg" id="queue-modal-overlay">
+        <div class="w-full max-w-lg bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            id="queue-modal">
+            <div
+                class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">queue</span>
+                    <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Scan Queue</h3>
+                </div>
+                <button
+                    class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors bg-surface-container-highest p-1 rounded cursor-pointer"
+                    onclick="toggleQueueModal()">close</button>
+            </div>
+            <div class="p-stack-md h-[320px] overflow-y-auto custom-scrollbar space-y-2">
+                <div
+                    class="p-3 bg-surface-container-highest/50 border border-secondary/30 rounded flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="material-symbols-outlined text-secondary animate-spin text-[18px]">progress_activity</span>
+                        <span class="font-code-sm text-on-surface text-[13px]">artifact_dump_0x3606dd8b.bin</span>
+                    </div>
+                    <span
+                        class="font-label-caps text-secondary text-[9px] border border-secondary/50 px-2 py-0.5 rounded">Current</span>
+                </div>
+                <div
+                    class="p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span
+                            class="font-code-sm text-on-surface-variant text-[13px]">artifact_dump_0x715fdd36.bin</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                </div>
+                <div
+                    class="p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span
+                            class="font-code-sm text-on-surface-variant text-[13px]">artifact_dump_0x0c8dda62.bin</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                </div>
+                <div
+                    class="p-3 bg-surface-container border border-outline-variant/30 rounded flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">pending</span>
+                        <span
+                            class="font-code-sm text-on-surface-variant text-[13px]">artifact_dump_0x5581007d.bin</span>
+                    </div>
+                    <span class="font-label-caps text-on-surface-variant text-[9px]">Pending</span>
+                </div>
+            </div>
+            <div class="p-stack-md border-t border-outline-variant bg-surface-container-low flex justify-end">
+                <button
+                    class="px-6 py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary hover:border-primary transition-all font-code-sm text-[12px] uppercase tracking-widest"
+                    onclick="toggleQueueModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Calendar Modal Overlay -->
+    <div class="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-stack-lg"
+        id="calendar-modal-overlay">
+        <div class="w-full max-w-xs bg-[#131313] border border-[#3a3939] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            id="calendar-modal">
+            <div
+                class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[20px]">calendar_month</span>
+                    <h3 class="font-bold text-primary text-sm uppercase tracking-tight">Timeline</h3>
+                </div>
+                <button
+                    class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                    onclick="toggleCalendarModal()">close</button>
+            </div>
+            <div class="p-4 bg-surface-container-lowest">
+                <div class="flex items-center justify-between mb-4">
+                    <button
+                        class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
+                        id="prev-month">chevron_left</button>
+                    <div class="flex items-center gap-2">
+                        <!-- Month Dropdown -->
+                        <div class="relative">
+                            <button
+                                class="dropdown-trigger flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest border border-outline-variant hover:border-primary transition-all text-primary font-bold text-[11px] uppercase tracking-widest"
+                                id="month-dropdown-trigger" onclick="toggleDropdown('month')">
+                                <span class="" id="display-month">JUNE</span>
+                                <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+                            </button>
+                            <div class="absolute top-full left-0 mt-2 w-32 bg-surface-container-high border border-outline-variant rounded-lg shadow-2xl z-[120] dropdown-animate"
+                                id="month-selector-dropdown">
+                                <div class="p-1 max-h-48 overflow-y-auto custom-scrollbar" id="month-list-container">
+                                    <!-- Months injected by JS -->
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        JANUARY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        FEBRUARY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        MARCH</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        APRIL</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        MAY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        JUNE</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        JULY</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        AUGUST</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        SEPTEMBER</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        OCTOBER</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        NOVEMBER</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        DECEMBER</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Year Dropdown -->
+                        <div class="relative">
+                            <button
+                                class="dropdown-trigger flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest border border-outline-variant hover:border-primary transition-all text-primary font-bold text-[11px] uppercase tracking-widest"
+                                id="year-dropdown-trigger" onclick="toggleDropdown('year')">
+                                <span class="" id="display-year">2026</span>
+                                <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+                            </button>
+                            <div class="absolute top-full left-0 mt-2 w-24 bg-surface-container-high border border-outline-variant rounded-lg shadow-2xl z-[120] dropdown-animate"
+                                id="year-selector-dropdown">
+                                <div class="p-1 max-h-48 overflow-y-auto custom-scrollbar" id="year-list-container">
+                                    <!-- Years injected by JS -->
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2020</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2021</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2022</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2023</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2024</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2025</div>
+                                    <div
+                                        class="py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest">
+                                        2026</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
+                        id="next-month">chevron_right</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">SU</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">MO</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">TU</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">WE</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">TH</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">FR</div>
+                    <div class="text-center text-[10px] text-on-surface-variant font-label-caps">SA</div>
+                </div>
+                <div class="grid grid-cols-7 gap-1" id="calendar-grid">
+                    <div class="calendar-day other-month">31</div>
+                    <div class="calendar-day">1</div>
+                    <div class="calendar-day">2</div>
+                    <div class="calendar-day">3</div>
+                    <div class="calendar-day">4</div>
+                    <div class="calendar-day">5</div>
+                    <div class="calendar-day">6</div>
+                    <div class="calendar-day">7</div>
+                    <div class="calendar-day">8</div>
+                    <div class="calendar-day">9</div>
+                    <div class="calendar-day">10</div>
+                    <div class="calendar-day">11</div>
+                    <div class="calendar-day">12</div>
+                    <div class="calendar-day">13</div>
+                    <div class="calendar-day">14</div>
+                    <div class="calendar-day">15</div>
+                    <div class="calendar-day">16</div>
+                    <div class="calendar-day selected">17</div>
+                    <div class="calendar-day">18</div>
+                    <div class="calendar-day">19</div>
+                    <div class="calendar-day">20</div>
+                    <div class="calendar-day">21</div>
+                    <div class="calendar-day">22</div>
+                    <div class="calendar-day">23</div>
+                    <div class="calendar-day">24</div>
+                    <div class="calendar-day">25</div>
+                    <div class="calendar-day">26</div>
+                    <div class="calendar-day">27</div>
+                    <div class="calendar-day">28</div>
+                    <div class="calendar-day">29</div>
+                    <div class="calendar-day">30</div>
+                </div>
+            </div>
+            <div
+                class="p-stack-md border-t border-outline-variant bg-surface-container-low flex justify-between items-center">
+                <button
+                    class="text-[10px] font-code-sm text-on-surface-variant hover:text-primary transition-colors underline uppercase"
+                    onclick="selectToday()">Go to today</button>
+                <button
+                    class="px-4 py-1.5 bg-secondary text-white rounded font-code-sm text-[11px] uppercase tracking-widest hover:opacity-90 transition-all"
+                    onclick="toggleCalendarModal()">Apply</button>
+            </div>
+        </div>
+    </div>
+    <!-- Full Width Top Bar -->
+    <header
+        class="fixed top-0 left-0 right-0 h-[60px] bg-surface border-b border-outline-variant flex justify-between items-center px-stack-lg z-50">
+        <div class="flex items-center gap-4">
+            <div class="flex flex-col justify-center">
+                <span
+                    class="text-primary font-bold tracking-tighter leading-none whitespace-nowrap text-[18px]">SHADOW-TRACE</span>
+                <span
+                    class="font-code-sm text-on-surface-variant uppercase tracking-widest mt-0.5 text-[10px]">v1.0.0</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-stack-sm">
+                <img alt="Examiner Profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwkAdo1ZlEWjsUFV9ZC_YE8YqmEARPZOUWFnevxX7v0CbUVGDfCaQhB6W9ae9_hoOvdYQ0ZRcR3BpyDH5uW-z8tqSLEYzd8BuS33fagIzPsxRJYXGPjwWLKWh9ekur6iDfBjoukL0YvG-ju_XNheeZi6xnWtC2mqcBrM8RHMaphl7JC6hYPeWep-1Wzo7cAmdRxVue8S9AM7oAQbjK5UwchanWJ2ebMzAeWMImuqvaROhaNBfkfLYa_tOf2NrtjhUFec6ECar6U8YCOQ">
+            </div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <div class="font-code-sm text-on-surface-variant text-[12px] min-w-[160px] text-right px-2 rounded border border-warning/30 text-primary"
+                id="clock">14 JUL 2026 13:20:04</div>
+            <div class="h-4 w-[1px] bg-outline-variant"></div>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 text-primary relative rounded-full"
+                onclick="toggleNotifications()" title="notifications">notifications<span
+                    class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border border-surface"></span></button>
+            <button
+                class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded-full text-primary"
+                title="lock app">lock</button>
+            <div class="flex items-center gap-2 ml-4 border-l border-outline-variant pl-4"><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="minimize">minimize</button><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-surface-bright hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="maximize">check_box_outline_blank</button><button
+                    class="material-symbols-outlined text-[18px] cursor-pointer hover:bg-error hover:text-primary transition-all active:scale-95 rounded p-1 text-on-surface-variant"
+                    title="close">close</button></div>
+        </div>
+    </header>
+    <!-- Application Body Container -->
+    <div class="flex flex-1 mt-[60px] overflow-hidden">
+        <!-- Sidebar -->
+        <aside
+            class="w-[260px] bg-surface border-r border-outline-variant flex flex-col shrink-0 overflow-hidden relative"
+            id="main-sidebar">
+            <!-- Sidebar Toggle Button -->
+            <button
+                class="absolute right-2 top-2 z-10 w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-highest border border-outline-variant text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                onclick="toggleSidebar()">
+                <span class="material-symbols-outlined text-[20px]" id="toggle-icon">chevron_left</span>
+            </button>
+            <!-- Sidebar Navigation -->
+            <nav class="flex-1 py-stack-md mt-10">
+                <button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-body-lg transition-colors hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">dashboard</span>
+                    <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+                </button>
+                <button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">search_check</span>
+                    <span class="sidebar-text whitespace-nowrap">Manual Scan</span>
+                </button>
+                <button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">folder_managed</span>
+                    <span class="sidebar-text whitespace-nowrap">Case Manager</span>
+                </button>
+                <button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden bg-surface-container-low text-primary border-primary border-r-2">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">gpp_maybe</span>
+                    <span class="sidebar-text whitespace-nowrap">Quarantined Files</span>
+                </button><button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">person</span>
+                    <span class="sidebar-text whitespace-nowrap">User Profile</span>
+                </button><button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">info</span>
+                    <span class="sidebar-text whitespace-nowrap">System Info</span>
+                </button>
+                <button
+                    class="flex items-center gap-stack-md px-stack-lg py-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-body-lg hover:bg-surface-container-highest cursor-pointer w-full text-left overflow-hidden">
+                    <span class="material-symbols-outlined text-[24px] shrink-0">settings</span>
+                    <span class="sidebar-text whitespace-nowrap">Settings</span>
+                </button>
+            </nav>
+            <div class="mt-auto p-stack-lg border-t border-outline-variant sidebar-monitoring">
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-error animate-pulse shadow-[0_0_12px_rgba(231,76,60,0.6)]">
+                    </div>
+                    <span class="font-label-caps uppercase tracking-widest text-error text-[13px]">Monitoring Off</span>
+                </div>
+            </div>
+        </aside>
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+            <div class="w-full max-w-container-max mx-auto p-stack-lg flex flex-col gap-stack-lg h-full">
+                <!-- QUARANTINE SUMMARY BAR -->
+                <div class="bg-surface-container border-l-4 border-outline-variant p-4 rounded mb-4">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-on-surface-variant text-[20px] mt-0.5">info</span>
+                        <div class="flex flex-col gap-1">
+                            <h4 class="text-on-surface font-bold text-[12px] uppercase tracking-widest">Quarantine
+                                Protocol</h4>
+                            <p class="text-on-surface-variant text-[13px] leading-relaxed">
+                                Quarantine isolates files that Shadow-Trace has identified as potentially dangerous.
+                                Quarantined files cannot be opened or executed by normal applications. Original file
+                                permissions have been revoked. Review each file before restoring or deleting. All
+                                quarantine actions are recorded in the audit log and cannot be reversed without a
+                                record.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-stack-md">
+                    <div class="bg-surface-container border border-outline-variant p-4 rounded-lg flex flex-col gap-1">
+                        <span
+                            class="text-on-surface-variant font-label-caps text-[11px] uppercase tracking-widest">Files
+                            in Quarantine</span>
+                        <span class="text-error text-2xl font-bold">3</span>
+                    </div>
+                    <div class="bg-surface-container border border-outline-variant p-4 rounded-lg flex flex-col gap-1">
+                        <span
+                            class="text-on-surface-variant font-label-caps text-[11px] uppercase tracking-widest">Total
+                            Size</span>
+                        <span class="text-primary text-2xl font-bold">24.7 MB</span>
+                    </div>
+                    <div class="bg-surface-container border border-outline-variant p-4 rounded-lg flex flex-col gap-1">
+                        <span
+                            class="text-on-surface-variant font-label-caps text-[11px] uppercase tracking-widest">Oldest
+                            File</span>
+                        <span class="text-primary text-2xl font-bold">8 days ago</span>
+                    </div>
+                </div>
+                <!-- FILTER AND SEARCH -->
+                <div
+                    class="bg-surface-container-low border border-outline-variant p-4 rounded-lg flex flex-wrap items-center gap-4">
+                    <div class="flex-1 min-w-[240px] relative">
+                        <span
+                            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                        <input
+                            class="w-full bg-surface-container-lowest border border-outline-variant rounded px-10 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all"
+                            placeholder="Search filenames..." type="text">
+                    </div>
+                    <button
+                        class="flex items-center gap-2 px-4 py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface-variant hover:text-primary transition-colors text-sm"
+                        onclick="toggleCalendarModal()">
+                        <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                        <span class="">Date Quarantined</span>
+                    </button>
+                    <div class="relative">
+                        <select
+                            class="bg-surface-container-highest border border-outline-variant rounded px-4 py-2 text-sm text-on-surface appearance-none pr-10 cursor-pointer">
+                            <option>Threat Type: All</option>
+                            <option>Malware</option>
+                            <option>Stego</option>
+                            <option>Both</option>
+                        </select>
+                        <span
+                            class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">arrow_drop_down</span>
+                    </div>
+                    <div class="relative">
+                        <select
+                            class="bg-surface-container-highest border border-outline-variant rounded px-4 py-2 text-sm text-on-surface appearance-none pr-10 cursor-pointer">
+                            <option>Sort: Newest first</option>
+                            <option>Oldest first</option>
+                        </select>
+                        <span
+                            class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">arrow_drop_down</span>
+                    </div>
+                </div>
+                <!-- QUARANTINE TABLE -->
+                <div class="bg-surface-container border border-outline-variant rounded-lg overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-surface-container-high border-b border-outline-variant">
+                            <tr>
+                                <th class="p-4 w-10"><input
+                                        class="rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-0"
+                                        type="checkbox"></th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                    Filename</th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                    Original Location</th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                    Quarantined On</th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                    Reason</th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                    Detection</th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">
+                                    Size</th>
+                                <th
+                                    class="p-4 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest text-right">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant/30">
+                            <tr class="hover:bg-surface-container-highest transition-colors">
+                                <td class="p-4"><input
+                                        class="rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-0"
+                                        type="checkbox"></td>
+                                <td class="p-4 font-code-sm text-[13px] text-primary">artifact_0x44a.bin</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant truncate max-w-[150px]"
+                                    title="/usr/local/bin/temp/">/usr/local/bin/temp/</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">2026-07-02 14:22</td>
+                                <td class="p-4"><span class="stego-badge bg-error">MALWARE</span></td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">Heuristic_L3</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">12.4 MB</td>
+                                <td class="p-4 text-right flex justify-end gap-2">
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-primary transition-colors"
+                                        title="Review">folder_managed</button>
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-secondary transition-colors"
+                                        title="Restore">undo</button>
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-error transition-colors"
+                                        title="Delete">delete</button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-surface-container-highest transition-colors">
+                                <td class="p-4"><input
+                                        class="rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-0"
+                                        type="checkbox"></td>
+                                <td class="p-4 font-code-sm text-[13px] text-primary">img_payload_01.png</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant truncate max-w-[150px]"
+                                    title="/home/user/downloads/">/home/user/downloads/</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">2026-07-05 09:10</td>
+                                <td class="p-4"><span class="stego-badge bg-warning">STEGO</span></td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">LSB_Analyzer</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">8.2 MB</td>
+                                <td class="p-4 text-right flex justify-end gap-2">
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-primary transition-colors"
+                                        title="Review">folder_managed</button>
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-secondary transition-colors"
+                                        title="Restore">undo</button>
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-error transition-colors"
+                                        title="Delete">delete</button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-surface-container-highest transition-colors">
+                                <td class="p-4"><input
+                                        class="rounded border-outline-variant bg-surface-container-lowest text-secondary focus:ring-0"
+                                        type="checkbox"></td>
+                                <td class="p-4 font-code-sm text-[13px] text-primary">sys_patch_v2.exe</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant truncate max-w-[150px]"
+                                    title="/var/log/updates/">/var/log/updates/</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">2026-07-08 22:47</td>
+                                <td class="p-4"><span class="stego-badge bg-error">LSB_EXECUTABLE</span></td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">Entropy_Scan</td>
+                                <td class="p-4 text-[12px] text-on-surface-variant">4.1 MB</td>
+                                <td class="p-4 text-right flex justify-end gap-2">
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-primary transition-colors"
+                                        title="Review">folder_managed</button>
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-secondary transition-colors"
+                                        title="Restore">undo</button>
+                                    <button
+                                        class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-error transition-colors"
+                                        title="Delete">delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div
+                        class="flex items-center justify-between bg-surface-container-high/50 p-4 border-t border-outline-variant">
+                        <span class="text-sm text-on-surface-variant font-medium">1 item selected</span>
+                        <div class="flex gap-3">
+                            <button
+                                class="px-4 py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-error hover:border-error transition-all text-[12px] font-code-sm uppercase tracking-widest">Delete
+                                Selected</button>
+                            <button
+                                class="px-4 py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary hover:border-primary transition-all text-[12px] font-code-sm uppercase tracking-widest">Export
+                                Selected Reports</button>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-surface-container-highest border border-outline-variant p-4 rounded-lg flex items-center justify-between">
+                    <div class="flex gap-stack-lg">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Auto-quarantine
+                                Malware</span>
+                            <span class="text-secondary text-sm font-bold">ON</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Auto-quarantine
+                                Stego</span>
+                            <span class="text-on-surface-variant text-sm font-bold">OFF</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Auto-delete
+                                after</span>
+                            <span class="text-on-surface text-sm font-bold">Never</span>
+                        </div>
+                    </div>
+                    <a class="text-[11px] font-code-sm text-primary hover:underline uppercase tracking-widest"
+                        href="#">Edit in Settings</a>
+                </div>
+                <!-- BULK ACTIONS -->
+
+                <!-- QUARANTINE POLICY -->
+
+            </div>
+        </main>
+    </div>
+    <!-- Notification Panel -->
+    <div class="fixed right-0 top-0 h-full w-[380px] glass-panel border-l border-outline-variant z-[60] flex flex-col shadow-2xl shadow-black/50"
+        id="notification-panel">
+        <div
+            class="p-stack-lg border-b border-outline-variant flex justify-between items-center bg-surface-container/50">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">notifications_active</span>
+                <h3 class="font-bold text-primary text-xl uppercase tracking-tight">Notifications</h3>
+            </div>
+            <button
+                class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors bg-surface-container-highest p-1 rounded cursor-pointer hover:text-error"
+                onclick="toggleNotifications()">close</button>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-stack-md space-y-3">
+            <div
+                class="p-stack-md bg-surface-container border border-outline-variant rounded-lg border-l-4 border-l-secondary">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-label-caps text-secondary text-[10px] uppercase">Analysis Complete</span>
+                    <span class="font-code-sm text-on-surface-variant text-[10px]">2m ago</span>
+                </div>
+                <p class="text-[13px] text-on-surface font-medium">Volatile memory scan finished.</p>
+                <p class="text-[11px] text-on-surface-variant mt-1">Found 0 threats in segment 0x00FF.</p>
+            </div>
+        </div>
+        <div class="p-stack-md border-t border-outline-variant bg-surface-container/30">
+            <button
+                class="w-full py-2 bg-surface-container-highest border border-outline-variant rounded text-on-surface hover:text-primary hover:border-primary transition-all font-code-sm text-[12px] uppercase tracking-widest">Clear
+                All History</button>
+        </div>
+    </div>
+    <script>
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // Modal Logic
+        function toggleQueueModal() {
+            const overlay = document.getElementById('queue-modal-overlay');
+            overlay.classList.toggle('open');
+        }
+
+        function toggleCalendarModal() {
+            const overlay = document.getElementById('calendar-modal-overlay');
+            overlay.classList.toggle('open');
+            if (overlay.classList.contains('open')) {
+                renderCalendar();
+            } else {
+                closeAllDropdowns();
+            }
+        }
+
+        function toggleDropdown(type) {
+            const dropdown = document.getElementById(`${type}-selector-dropdown`);
+            const trigger = document.getElementById(`${type}-dropdown-trigger`);
+            const isOpen = dropdown.classList.contains('open');
+
+            closeAllDropdowns();
+
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                trigger.classList.add('active');
+            }
+        }
+
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown-animate').forEach(d => d.classList.remove('open'));
+            document.querySelectorAll('.dropdown-trigger').forEach(t => t.classList.remove('active'));
+        }
+
+        // Dropdown Item Generation
+        const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        const years = Array.from({ length: 7 }, (_, i) => 2020 + i);
+
+        function populateDropdowns() {
+            const monthContainer = document.getElementById('month-list-container');
+            const yearContainer = document.getElementById('year-list-container');
+
+            months.forEach((m, idx) => {
+                const div = document.createElement('div');
+                div.className = "py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest";
+                div.textContent = m;
+                div.onclick = () => {
+                    currentCalDate.setMonth(idx);
+                    renderCalendar();
+                    closeAllDropdowns();
+                };
+                monthContainer.appendChild(div);
+            });
+
+            years.forEach(y => {
+                const div = document.createElement('div');
+                div.className = "py-2 px-3 hover:bg-surface-bright cursor-pointer text-[11px] font-medium text-on-surface-variant hover:text-primary transition-colors uppercase tracking-widest";
+                div.textContent = y;
+                div.onclick = () => {
+                    currentCalDate.setFullYear(y);
+                    renderCalendar();
+                    closeAllDropdowns();
+                };
+                yearContainer.appendChild(div);
+            });
+        }
+
+        document.getElementById('queue-modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'queue-modal-overlay') toggleQueueModal();
+        });
+
+        document.getElementById('calendar-modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'calendar-modal-overlay' && !e.target.closest('.dropdown-animate')) toggleCalendarModal();
+        });
+
+        // Calendar Picker Logic
+        let currentCalDate = new Date(2026, 5, 17);
+        let selectedCalDate = new Date(2026, 5, 17);
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const displayMonth = document.getElementById('display-month');
+            const displayYear = document.getElementById('display-year');
+            grid.innerHTML = '';
+
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+
+            displayMonth.textContent = months[month];
+            displayYear.textContent = year;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+            // Prev month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = prevMonthDays - i;
+                grid.appendChild(day);
+            }
+
+            // Current month days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                const isSelected = selectedCalDate.getDate() === i && selectedCalDate.getMonth() === month && selectedCalDate.getFullYear() === year;
+                day.className = `calendar-day ${isSelected ? 'selected' : ''}`;
+                day.textContent = i;
+                day.onclick = () => {
+                    selectedCalDate = new Date(year, month, i);
+                    renderCalendar();
+                };
+                grid.appendChild(day);
+            }
+        }
+
+        document.getElementById('prev-month').onclick = () => {
+            currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+            renderCalendar();
+        };
+        document.getElementById('next-month').onclick = () => {
+            currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+            renderCalendar();
+        };
+        function selectToday() {
+            const today = new Date(2026, 5, 17);
+            currentCalDate = new Date(today);
+            selectedCalDate = new Date(today);
+            renderCalendar();
+        }
+
+        // Notification Panel Logic
+        function toggleNotifications() {
+            const panel = document.getElementById('notification-panel');
+            panel.classList.toggle('open');
+        }
+
+        // Clock Logic
+        function updateClock() {
+            const now = new Date();
+            const days = now.getDate().toString().padStart(2, '0');
+            const monthsStr = now.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+            const yearsStr = now.getFullYear();
+            const time = now.toLocaleTimeString('en-GB', { hour12: false });
+            const clockEl = document.getElementById('clock');
+            if (clockEl) clockEl.textContent = `${days} ${monthsStr} ${yearsStr} ${time}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Mock Reports
+        const reportsData = Array.from({ length: 15 }, (_, i) => ({
+            status: i % 5 === 0 ? 'STEGO' : (i % 3 === 0 ? 'SUSPICIOUS' : 'CLEAN'),
+            filename: `artifact_dump_0x${Math.random().toString(16).slice(2, 10)}.bin`,
+            timestamp: new Date(2026, 5, 17 - (i / 3), 12, 0).toISOString().replace('T', ' ').split('.')[0],
+        }));
+
+        const tableBody = document.getElementById('reports-table-body');
+        reportsData.forEach((report) => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-surface-container-highest transition-colors cursor-pointer group';
+            let statusColor = '#27ae60';
+            if (report.status === 'SUSPICIOUS') statusColor = '#f39c12';
+            if (report.status === 'STEGO') statusColor = '#e74c3c';
+            row.innerHTML = `
+            <td class="px-stack-lg py-4 text-center"><div class="w-2 h-2 rounded-full mx-auto" style="background-color: ${statusColor}"></div></td>
+            <td class="px-stack-lg py-4 text-on-surface truncate max-w-[300px]">${report.filename}</td>
+            <td class="px-stack-lg py-4 text-on-surface-variant">${report.timestamp}</td>
+            <td class="px-stack-lg py-4 text-right"><span class="stego-badge" style="background-color: ${statusColor}">${report.status}</span></td>
+            <td class="px-stack-lg py-4 text-right"><span class="material-symbols-outlined text-on-surface-variant cursor-pointer group-hover:text-primary transition-colors">visibility</span></td>
+        `;
+            tableBody.appendChild(row);
+        });
+
+        // Graph Logic
+        const mockGraphData = {
+            clean: [12, 45, 67, 32, 56, 89, 43, 21, 56, 78, 90, 45, 34, 67, 88],
+            suspicious: [2, 5, 12, 8, 4, 15, 6, 3, 9, 11, 4, 2, 7, 5, 12],
+            stego: [0, 1, 3, 1, 0, 4, 2, 0, 1, 2, 0, 1, 1, 0, 3]
+        };
+
+        let currentFilterType = 'clean';
+
+        function updateGraph(type) {
+            currentFilterType = type || currentFilterType;
+            ['clean', 'suspicious', 'stego'].forEach(t => {
+                const btn = document.getElementById(`filter-${t}`);
+                if (btn) btn.classList.toggle('active-filter', t === currentFilterType);
+            });
+
+            const data = mockGraphData[currentFilterType];
+            const container = document.getElementById('graph-container');
+            const xAxis = document.getElementById('x-axis-container');
+            const color = currentFilterType === 'clean' ? '#27ae60' : (currentFilterType === 'suspicious' ? '#f39c12' : '#e74c3c');
+
+            container.innerHTML = '';
+            xAxis.innerHTML = '';
+
+            data.forEach((val, i) => {
+                const d = new Date(2026, 5, 4 + i);
+                const labelStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+
+                const bar = document.createElement('div');
+                bar.className = 'graph-bar w-full rounded-t-sm cursor-pointer relative group';
+                bar.style.height = `${(val / 100) * 300}px`;
+                bar.style.backgroundColor = color;
+                bar.style.opacity = '0.7';
+                container.appendChild(bar);
+
+                const label = document.createElement('span');
+                label.className = 'flex-1 text-center truncate px-1';
+                label.textContent = labelStr;
+                xAxis.appendChild(label);
+            });
+
+            document.getElementById('current-range-display').textContent = `04 JUN - 18 JUN 2026`;
+        }
+
+        function navigateTimePeriod(direction) {
+            updateGraph(currentFilterType);
+        }
+
+        // Init
+        populateDropdowns();
+        updateGraph('clean');
+        renderCalendar();
+    </script>
+
+
+
+
+
+
+
+
+</body>
+
+</html>

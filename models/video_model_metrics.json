@@ -1,0 +1,30 @@
+{
+  "model": "VideoStegNet_FourStream",
+  "streams": [
+    "Spatial_HPF",
+    "Temporal_BiLSTM",
+    "DCT_adaptive",
+    "OpticalFlow_motion"
+  ],
+  "accuracy": 0.7333,
+  "precision": 0.8,
+  "recall": 0.8485,
+  "f1_score": 0.8235,
+  "auc_roc": 0.733,
+  "best_val_auc": 0.7693,
+  "detects": [
+    "spatial_LSB",
+    "DCT_adaptive_stego",
+    "motion_vector_stego_proxy"
+  ],
+  "confusion_matrix": [
+    [
+      10,
+      14
+    ],
+    [
+      10,
+      56
+    ]
+  ]
+}

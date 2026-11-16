@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>SHADOW-TRACE | Forensic Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #0f0f23;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: #e0e3e8;
+        }
+        .scanline-overlay::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 100;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(28, 32, 36, 0.6);
+        }
+        .led-pulse-green { box-shadow: 0 0 8px #92ccff; animation: pulse 2s infinite; }
+        .led-pulse-red { box-shadow: 0 0 8px #ffb4ab; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .hidden { display: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        
+        #nav-links a { transition: all 0.2s; }
+        #nav-links a.active {
+            color: #92ccff;
+            background: rgba(146, 204, 255, 0.1);
+            border-right: 4px solid #92ccff;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#92ccff",
+                        error: "#ffb4ab",
+                        surface: "#101418",
+                        "surface-container": "#1c2024",
+                        "on-surface": "#e0e3e8",
+                        "on-surface-variant": "#bfc7d2",
+                        outline: "#89929b",
+                        "primary-container": "#004b73",
+                    },
+                    fontFamily: {
+                        "data-mono": ["JetBrains Mono"],
+                        "headline": ["IBM Plex Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="scanline-overlay">
+<!-- SIDEBAR NAVIGATION -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface-container/90 backdrop-blur-xl border-r border-white/10 flex flex-col py-6 z-50">
+    <div class="px-6 mb-8 flex items-center gap-3">
+        <div class="bg-primary/20 p-2 rounded-lg"><span class="material-symbols-outlined text-primary">shield</span></div>
+        <div>
+            <h1 class="font-headline font-black tracking-tighter text-primary leading-none text-xl">SHADOW_TRACE</h1>
+            <p class="text-[10px] font-data-mono text-outline uppercase tracking-widest mt-1">V.1.0.0-STABLE</p>
+        </div>
+    </div>
+    <nav class="flex-1 flex flex-col gap-1" id="nav-links">
+        <a class="flex items-center gap-3 px-6 py-4 text-on-surface hover:text-white cursor-pointer" onclick="switchTab('dashboard', this)">
+            <span class="material-symbols-outlined">dashboard</span><span class="text-sm font-medium">Dashboard</span>
+        </a>
+        <a class="flex items-center gap-3 px-6 py-4 text-on-surface hover:text-white cursor-pointer" onclick="switchTab('case-management', this)">
+            <span class="material-symbols-outlined">folder_shared</span><span class="text-sm font-medium">Case Management</span>
+        </a>
+        <a class="flex items-center gap-3 px-6 py-4 text-on-surface hover:text-white cursor-pointer" onclick="switchTab('benchmarks', this)">
+            <span class="material-symbols-outlined">speed</span><span class="text-sm font-medium">Benchmarking</span>
+        </a>
+        <div class="mt-8 px-6 mb-2 text-outline text-xs font-bold uppercase tracking-widest">Monitored Folders</div>
+        <div id="monitored-folders-list" class="flex flex-col"></div>
+    </nav>
+    <div class="mt-auto px-6 border-t border-white/10 pt-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500 led-pulse-green"></span>
+            <span class="text-[10px] text-outline font-data-mono uppercase">MONITORING ACTIVE</span>
+        </div>
+        <button onclick="refreshData()" class="material-symbols-outlined text-outline hover:text-white cursor-pointer" title="Refresh Data">refresh</button>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT AREA -->
+<main class="ml-[260px] flex-1 flex flex-col h-screen overflow-hidden bg-surface relative">
+    <!-- TOP APP BAR -->
+    <header class="h-16 flex justify-between items-center px-8 bg-surface-container/50 backdrop-blur-md border-b border-white/10 z-40 shrink-0">
+        <div class="flex items-center gap-4">
+            <span class="font-headline font-bold text-primary tracking-wider" id="current-view-title">FORENSIC_OS</span>
+        </div>
+        <div class="flex flex-col items-end">
+            <span class="text-[10px] font-data-mono text-primary leading-none" id="clock">...</span>
+            <span class="text-[10px] font-data-mono text-outline leading-none mt-1" id="examiner-info">Examiner: ...</span>
+        </div>
+    </header>
+
+    <!-- CONTENT VIEWS -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-8 relative" id="content-container">
+
+        <!-- VIEW: DASHBOARD -->
+        <div id="view-dashboard" class="flex flex-col gap-6">
+            <div class="grid grid-cols-4 gap-6" id="stats-grid">
+                <!-- Populated via JS -->
+            </div>
+            
+            <h2 class="font-headline font-bold text-sm tracking-wider uppercase text-white mt-4 border-b border-white/10 pb-2">Active Intelligence Models</h2>
+            <div class="grid grid-cols-4 gap-6" id="models-grid">
+                <!-- Populated via JS -->
+            </div>
+
+            <div class="glass-panel rounded-xl mt-4 border border-white/10 flex flex-col">
+                <div class="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between">
+                    <span class="font-headline text-sm font-bold tracking-wider">RECENT TELEMETRY</span>
+                    <button class="text-[10px] font-data-mono text-primary uppercase" onclick="switchTab('case-management', document.querySelectorAll('#nav-links a')[1])">View All >></button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 text-[10px] font-data-mono uppercase text-outline">
+                                <th class="px-6 py-3">Filename</th>
+                                <th class="px-6 py-3">Verdict</th>
+                                <th class="px-6 py-3">Size</th>
+                                <th class="px-6 py-3">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-telemetry-body" class="text-xs font-data-mono text-on-surface"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: CASE MANAGEMENT -->
+        <div id="view-case-management" class="hidden flex h-full gap-6 -m-8 p-8 absolute inset-0">
+            <!-- Left: List -->
+            <section class="w-1/3 flex flex-col gap-4 border-r border-white/10 pr-6 shrink-0 h-full">
+                <div class="flex gap-2">
+                    <button onclick="filterReports('all')" id="flt-all" class="flex-1 py-1.5 text-[10px] font-data-mono bg-primary/20 text-primary rounded border border-primary/30">ALL</button>
+                    <button onclick="filterReports('clean')" id="flt-clean" class="flex-1 py-1.5 text-[10px] font-data-mono bg-white/5 text-outline hover:text-white rounded border border-white/10">CLEAN</button>
+                    <button onclick="filterReports('suspicious')" id="flt-suspicious" class="flex-1 py-1.5 text-[10px] font-data-mono bg-white/5 text-outline hover:text-white rounded border border-white/10">SUSP</button>
+                    <button onclick="filterReports('stego')" id="flt-stego" class="flex-1 py-1.5 text-[10px] font-data-mono bg-white/5 text-outline hover:text-white rounded border border-white/10">STEGO</button>
+                </div>
+                <input id="report-search" onkeyup="filterReports(null)" placeholder="Search evidence..." class="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-xs font-data-mono text-white placeholder-outline focus:border-primary outline-none" />
+                <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2" id="report-list">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+            
+            <!-- Right: Details -->
+            <section class="w-2/3 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-4 pb-16 relative">
+                <div id="no-report-selected" class="absolute inset-0 flex flex-col items-center justify-center text-outline">
+                    <span class="material-symbols-outlined text-6xl mb-4 opacity-50">policy</span>
+                    <h3 class="font-headline tracking-widest text-sm uppercase">Select evidence to view details</h3>
+                </div>
+                
+                <div id="report-details" class="hidden flex flex-col gap-6 w-full">
+                    
+                    <!-- HMAC SEAL BOX -->
+                    <div id="seal-box" class="glass-panel p-6 rounded-xl border-l-4 flex gap-6 items-center">
+                        <div id="seal-icon-box" class="w-14 h-14 rounded-full flex items-center justify-center shrink-0">
+                            <span id="seal-icon" class="material-symbols-outlined text-4xl">verified</span>
+                        </div>
+                        <div>
+                            <h3 id="seal-title" class="font-headline font-bold text-lg leading-tight">REPORT VERIFIED</h3>
+                            <p id="seal-msg" class="text-xs font-data-mono text-outline mt-1">Hash matches signature.</p>
+                        </div>
+                        <div class="ml-auto flex gap-2">
+                            <button onclick="openCurrentPDF()" class="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 px-3 py-2 rounded flex items-center gap-2 text-xs font-data-mono font-bold transition-colors">
+                                <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> OPEN PDF
+                            </button>
+                            <button id="btn-evidence-pack" onclick="openEvidencePack()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-2 rounded flex items-center gap-2 text-xs font-data-mono font-bold transition-colors">
+                                <span class="material-symbols-outlined text-[16px]">folder_zip</span> PACKAGE
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <!-- TECH SPECS -->
+                        <div class="glass-panel rounded-xl p-6 border border-white/10 flex flex-col gap-3">
+                            <h4 class="font-headline text-xs font-bold text-primary tracking-widest uppercase border-b border-white/10 pb-2">Technical Specs</h4>
+                            <div class="text-xs font-data-mono flex flex-col gap-2">
+                                <div class="flex justify-between"><span class="text-outline">File:</span><span id="spec-name" class="text-white truncate pl-2">...</span></div>
+                                <div class="flex justify-between"><span class="text-outline">Size:</span><span id="spec-size" class="text-white">...</span></div>
+                                <div class="flex justify-between"><span class="text-outline">Date:</span><span id="spec-date" class="text-white">...</span></div>
+                                <div class="flex justify-between"><span class="text-outline">Session:</span><span id="spec-session" class="text-white">...</span></div>
+                            </div>
+                        </div>
+
+                        <!-- INTELLIGENCE INSIGHTS -->
+                        <div class="glass-panel rounded-xl p-6 border border-white/10 flex flex-col gap-3">
+                            <h4 class="font-headline text-xs font-bold text-primary tracking-widest uppercase border-b border-white/10 pb-2">Intelligence Insights</h4>
+                            <div class="text-xs font-data-mono flex flex-col gap-3 h-full justify-center">
+                                <div class="bg-black/30 p-2 rounded border border-white/5 flex flex-col">
+                                    <span class="text-[10px] text-outline uppercase">Confidence Calibration</span>
+                                    <span id="insight-calibration" class="text-white font-bold">N/A</span>
+                                </div>
+                                <div class="bg-black/30 p-2 rounded border border-white/5 flex flex-col">
+                                    <span class="text-[10px] text-outline uppercase">Source Correlation</span>
+                                    <span id="insight-correlation" class="text-white">N/A</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INVESTIGATOR NOTES -->
+                    <div class="glass-panel rounded-xl p-6 border border-white/10 flex flex-col gap-4">
+                        <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                            <h4 class="font-headline text-xs font-bold text-primary tracking-widest uppercase">Investigator Notes & Tags</h4>
+                            <button onclick="queueReprocess()" class="text-[10px] font-data-mono text-outline hover:text-error flex items-center gap-1 transition-colors">
+                                <span class="material-symbols-outlined text-[14px]">refresh</span> Reprocess Evidence
+                            </button>
+                        </div>
+                        
+                        <div class="flex gap-2 items-center flex-wrap" id="tags-container">
+                            <!-- Tags injected here -->
+                        </div>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" id="new-tag-input" placeholder="Add tag..." class="bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px] font-data-mono text-white outline-none w-32" />
+                            <button onclick="addTag()" class="bg-primary/20 text-primary px-2 py-1 rounded text-[10px] font-bold">ADD</button>
+                        </div>
+
+                        <div class="flex flex-col gap-2 mt-4" id="notes-container">
+                            <!-- Notes injected here -->
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <input type="text" id="new-note-input" placeholder="Add an investigator note..." class="bg-black/40 border border-white/10 rounded px-3 py-2 text-xs font-data-mono text-white outline-none flex-1" />
+                            <button onclick="addNote()" class="bg-primary/20 text-primary px-4 py-2 rounded text-xs font-bold">SAVE</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- VIEW: BENCHMARKS -->
+        <div id="view-benchmarks" class="hidden flex-col gap-6">
+            <h2 class="font-headline font-bold text-sm tracking-wider uppercase text-white border-b border-white/10 pb-2">System Benchmarks</h2>
+            <div id="benchmarks-list" class="flex flex-col gap-4"></div>
+
+            <!-- AUDIT TRAIL -->
+            <div class="mt-4 border-t border-white/10 pt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-headline font-bold text-sm tracking-wider uppercase text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">policy</span>
+                        Analyst Session Audit Trail
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="verifyAudit()" class="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded text-[10px] font-data-mono font-bold transition-colors">
+                            <span class="material-symbols-outlined text-[14px]">verified_user</span> VERIFY CHAIN
+                        </button>
+                        <button onclick="exportAudit()" class="flex items-center gap-1 bg-white/5 hover:bg-white/10 text-outline hover:text-white border border-white/10 px-3 py-1.5 rounded text-[10px] font-data-mono font-bold transition-colors">
+                            <span class="material-symbols-outlined text-[14px]">download</span> EXPORT CSV
+                        </button>
+                    </div>
+                </div>
+                <div id="audit-integrity-banner" class="hidden mb-4 p-3 rounded border font-data-mono text-xs"></div>
+                <div class="glass-panel rounded-xl border border-white/10 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 text-[9px] font-data-mono uppercase text-outline">
+                                <th class="px-4 py-3">#</th>
+                                <th class="px-4 py-3">Timestamp (UTC)</th>
+                                <th class="px-4 py-3">Examiner</th>
+                                <th class="px-4 py-3">Action</th>
+                                <th class="px-4 py-3">Target</th>
+                                <th class="px-4 py-3">HMAC Preview</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-log-body" class="text-[10px] font-data-mono text-on-surface divide-y divide-white/5">
+                            <tr><td colspan="6" class="px-4 py-4 text-outline text-center">Loading audit log...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    let GLOBAL_DATA = null;
+    let currentSessionId = null;
+    let currentReportPath = null;
+    let activeFilter = 'all';
+
+    // Initialization
+    window.onload = function() {
+        const rawData = document.getElementById('initial-data').textContent;
+        if (rawData && rawData !== '__INITIAL_DATA__') {
+            GLOBAL_DATA = JSON.parse(rawData);
+            renderAll();
+        }
+        
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+        
+        // Initial tab activation
+        const firstTab = document.querySelectorAll('#nav-links a')[0];
+        firstTab.classList.add('active');
+    };
+
+    function switchTab(tabId, el) {
+        document.querySelectorAll('#nav-links a').forEach(a => a.classList.remove('active'));
+        el.classList.add('active');
+        
+        document.getElementById('view-dashboard').classList.add('hidden');
+        document.getElementById('view-case-management').classList.add('hidden');
+        document.getElementById('view-benchmarks').classList.add('hidden');
+        
+        document.getElementById('view-' + tabId).classList.remove('hidden');
+        document.getElementById('current-view-title').innerText = "FORENSIC_OS // " + tabId.replace('-', ' ').toUpperCase();
+
+        if (window.pywebview) {
+            window.pywebview.api.log_ui_action('TAB_SWITCHED', tabId);
+        }
+        if (tabId === 'benchmarks') loadAuditLog();
+    }
+
+    function renderAll() {
+        document.getElementById('examiner-info').innerText = 'Examiner: ' + GLOBAL_DATA.examiner;
+        
+        // Sidebar Folders
+        let fHtml = '';
+        GLOBAL_DATA.monitored_folders.forEach(f => {
+            fHtml += `<div class="px-6 py-2 text-[10px] font-data-mono text-on-surface-variant flex justify-between"><span title="${f.path}" class="truncate">${f.name}</span><button onclick="openFolder('${f.path.replace(/\\/g, '\\\\')}')" class="material-symbols-outlined text-[14px] hover:text-primary">open_in_new</button></div>`;
+        });
+        document.getElementById('monitored-folders-list').innerHTML = fHtml;
+
+        // Dashboard Stats
+        const s = GLOBAL_DATA.stats;
+        document.getElementById('stats-grid').innerHTML = `
+            <div class="glass-panel p-6 rounded-xl border-t-4 border-primary shadow-lg flex flex-col">
+                <span class="text-[10px] font-data-mono text-outline uppercase tracking-widest">Total Scanned</span>
+                <span class="text-3xl font-data-mono font-bold text-white mt-2">${s.total_scanned}</span>
+            </div>
+            <div class="glass-panel p-6 rounded-xl border-t-4 border-error shadow-lg flex flex-col">
+                <span class="text-[10px] font-data-mono text-outline uppercase tracking-widest">Threats</span>
+                <span class="text-3xl font-data-mono font-bold text-error drop-shadow-[0_0_8px_rgba(255,180,171,0.5)] mt-2">${s.total_threats}</span>
+            </div>
+            <div class="glass-panel p-6 rounded-xl border-t-4 border-[#27ae60] shadow-lg flex flex-col">
+                <span class="text-[10px] font-data-mono text-outline uppercase tracking-widest">Clean</span>
+                <span class="text-3xl font-data-mono font-bold text-[#27ae60] mt-2">${s.total_clean}</span>
+            </div>
+            <div class="glass-panel p-6 rounded-xl border-t-4 border-[#f5a623] shadow-lg flex flex-col">
+                <span class="text-[10px] font-data-mono text-outline uppercase tracking-widest">Suspicious</span>
+                <span class="text-3xl font-data-mono font-bold text-[#f5a623] mt-2">${s.total_suspicious}</span>
+            </div>
+        `;
+
+        // Dashboard Models
+        let mHtml = '';
+        GLOBAL_DATA.model_status.forEach(m => {
+            const color = m.loaded ? 'text-primary' : 'text-error';
+            const border = m.loaded ? 'border-primary/20' : 'border-error/20';
+            const badge = m.loaded ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error';
+            mHtml += `
+            <div class="glass-panel p-5 rounded-xl border ${border} flex flex-col">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="material-symbols-outlined ${color}">psychology</span>
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded ${badge}">${m.loaded?'LOADED':'MISSING'}</span>
+                </div>
+                <span class="font-data-mono text-xs font-bold text-white">${m.name}</span>
+                <span class="text-[10px] text-outline mt-1">${m.description}</span>
+            </div>`;
+        });
+        document.getElementById('models-grid').innerHTML = mHtml;
+
+        // Dashboard Recent Telemetry
+        let tHtml = '';
+        GLOBAL_DATA.recent_reports.forEach(r => {
+            tHtml += `
+            <tr class="border-b border-white/5">
+                <td class="px-6 py-3 truncate max-w-[200px]" title="${r.name}">${r.name}</td>
+                <td class="px-6 py-3">${getVerdictBadge(r.category || r.verdict)}</td>
+                <td class="px-6 py-3">${r.size_kb} KB</td>
+                <td class="px-6 py-3">${r.modified.split(' ')[1]}</td>
+            </tr>`;
+        });
+        document.getElementById('recent-telemetry-body').innerHTML = tHtml;
+
+        // Case Management Reports
+        renderReportsList();
+
+        // Benchmarks
+        let bHtml = '';
+        if(GLOBAL_DATA.benchmarks.length === 0) {
+            bHtml = '<div class="text-outline text-xs font-data-mono">No benchmarks found.</div>';
+        } else {
+            GLOBAL_DATA.benchmarks.forEach(b => {
+                bHtml += `<div class="glass-panel p-4 rounded border border-white/10 font-data-mono text-xs">
+                    <div class="text-primary font-bold mb-2">${b.benchmark_run || b.timestamp}</div>
+                    <pre class="text-outline overflow-x-auto custom-scrollbar">${JSON.stringify(b, null, 2)}</pre>
+                </div>`;
+            });
+        }
+        document.getElementById('benchmarks-list').innerHTML = bHtml;
+    }
+
+    function getVerdictBadge(verdict) {
+        let v = (verdict || '').toUpperCase();
+        if (v === 'CLEAN') return `<span class="bg-[#27ae60]/10 text-[#27ae60] border border-[#27ae60]/30 px-2 py-0.5 rounded text-[9px] font-bold">CLEAN</span>`;
+        if (v === 'SUSPICIOUS') return `<span class="bg-[#f5a623]/10 text-[#f5a623] border border-[#f5a623]/30 px-2 py-0.5 rounded text-[9px] font-bold">SUSP</span>`;
+        if (v === 'STEGO' || v === 'THREAT' || v === 'STEGO_DETECTED') return `<span class="bg-[#e94560]/10 text-[#e94560] border border-[#e94560]/30 px-2 py-0.5 rounded text-[9px] font-bold">STEGO</span>`;
+        return `<span class="bg-white/10 text-outline border border-white/20 px-2 py-0.5 rounded text-[9px] font-bold">${v}</span>`;
+    }
+
+    function filterReports(category) {
+        if (category) {
+            activeFilter = category;
+            ['all','clean','suspicious','stego'].forEach(c => {
+                const el = document.getElementById('flt-'+c);
+                if(c === category) {
+                    el.className = "flex-1 py-1.5 text-[10px] font-data-mono bg-primary/20 text-primary rounded border border-primary/30";
+                } else {
+                    el.className = "flex-1 py-1.5 text-[10px] font-data-mono bg-white/5 text-outline hover:text-white rounded border border-white/10";
+                }
+            });
+            if (window.pywebview) {
+                window.pywebview.api.log_ui_action('FILTER_APPLIED', category);
+            }
+        }
+        renderReportsList();
+    }
+
+    function renderReportsList() {
+        const query = (document.getElementById('report-search').value || '').toLowerCase();
+        if (query.length > 2 && window.pywebview) {
+            window.pywebview.api.log_ui_action('SEARCH_PERFORMED', query);
+        }
+        const list = document.getElementById('report-list');
+        list.innerHTML = '';
+
+        GLOBAL_DATA.all_reports.forEach(r => {
+            if (activeFilter !== 'all' && r.category !== activeFilter) return;
+            if (query && !r.name.toLowerCase().includes(query)) return;
+
+            const div = document.createElement('div');
+            div.className = "glass-panel p-3 rounded border border-white/5 cursor-pointer hover:border-primary/50 transition-colors";
+            div.onclick = () => loadReportDetails(r);
+            div.innerHTML = `
+                <div class="flex justify-between mb-1"><span class="font-data-mono text-xs text-white truncate w-3/4">${r.name}</span>${getVerdictBadge(r.category)}</div>
+                <div class="text-[9px] font-data-mono text-outline flex justify-between"><span>${r.modified}</span><span>${r.size_kb}KB</span></div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function loadReportDetails(r) {
+        currentSessionId = r.session_id.replace('...', ''); 
+        // Note: the backend truncated it to 8 chars in fetch_all_reports! We might need the full ID from verify_report_seal
+        currentReportPath = r.path;
+
+        document.getElementById('no-report-selected').classList.add('hidden');
+        document.getElementById('report-details').classList.remove('hidden');
+
+        document.getElementById('spec-name').innerText = r.name;
+        document.getElementById('spec-size').innerText = r.size_kb + ' KB';
+        document.getElementById('spec-date').innerText = r.modified;
+        document.getElementById('spec-session').innerText = r.session_id;
+
+        // Fetch deep verification details
+        if(window.pywebview) {
+            window.pywebview.api.get_report_details(r.path).then(resStr => {
+                const details = JSON.parse(resStr);
+                currentSessionId = details.session_id || currentSessionId;
+                document.getElementById('spec-session').innerText = details.session_id || r.session_id;
+                
+                const sBox = document.getElementById('seal-box');
+                const sIconBox = document.getElementById('seal-icon-box');
+                const sIcon = document.getElementById('seal-icon');
+                
+                if(details.valid) {
+                    sBox.className = "glass-panel p-6 rounded-xl border-l-4 border-l-primary flex gap-6 items-center bg-primary/5";
+                    sIconBox.className = "w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-primary/20 led-pulse-green text-primary";
+                    sIcon.innerText = "verified";
+                    document.getElementById('seal-title').innerText = "REPORT VERIFIED";
+                    document.getElementById('seal-title').className = "font-headline font-bold text-lg leading-tight text-primary";
+                    document.getElementById('seal-msg').innerText = "Cryptographic seal is intact.";
+                } else {
+                    sBox.className = "glass-panel p-6 rounded-xl border-l-4 border-l-error flex gap-6 items-center bg-error/5";
+                    sIconBox.className = "w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-error/20 led-pulse-red text-error";
+                    sIcon.innerText = "report";
+                    document.getElementById('seal-title').innerText = "INTEGRITY FAILURE";
+                    document.getElementById('seal-title').className = "font-headline font-bold text-lg leading-tight text-error";
+                    document.getElementById('seal-msg').innerText = details.error || "File altered after generation.";
+                }
+
+                if (details.calibration && details.calibration.confidence_band) {
+                    const cb = details.calibration.confidence_band;
+                    document.getElementById('insight-calibration').innerHTML = `<span class="text-${cb.level === 'HIGH' ? 'error' : cb.level === 'MEDIUM' ? '[#f5a623]' : 'primary'} font-bold">${cb.label}</span><span class="text-outline block mt-1">${(details.calibration.adjusted_confidence * 100).toFixed(1)}% adjusted confidence</span>`;
+                } else {
+                    document.getElementById('insight-calibration').innerHTML = `<span class="text-outline">Requires manual review</span>`;
+                }
+
+                if (details.source_correlation && details.source_correlation.has_correlation) {
+                    const sc = details.source_correlation;
+                    const flagsHtml = sc.flags.map(f => `<span class="text-error">• ${f}</span>`).join('<br>');
+                    document.getElementById('insight-correlation').innerHTML = `<span class="text-white">${sc.url_domain || 'Local file'}</span><div class="mt-1">${flagsHtml}</div>`;
+                } else {
+                    document.getElementById('insight-correlation').innerHTML = `<span class="text-outline">None</span>`;
+                }
+
+                // Now load investigation data
+                if (currentSessionId) {
+                    loadInvestigationData(currentSessionId);
+                }
+            });
+        }
+    }
+
+    function loadInvestigationData(sessionId) {
+        if(!window.pywebview) return;
+        window.pywebview.api.get_session_investigation(sessionId).then(resStr => {
+            const data = JSON.parse(resStr);
+            if(data.error) return;
+
+            // Render Tags
+            let tHtml = '';
+            (data.tags || []).forEach(t => {
+                tHtml += `<span class="bg-surface-container-high text-outline px-2 py-1 rounded text-[10px] font-data-mono flex items-center gap-1 border border-white/10"><span class="material-symbols-outlined text-[12px]">sell</span> ${t.tag}</span>`;
+            });
+            document.getElementById('tags-container').innerHTML = tHtml;
+
+            // Render Notes
+            let nHtml = '';
+            (data.notes || []).forEach(n => {
+                nHtml += `<div class="bg-black/20 p-2 rounded border border-white/5 font-data-mono text-xs flex flex-col gap-1">
+                    <span class="text-white">${n.note_text}</span>
+                    <div class="flex justify-between text-[9px] text-outline"><span>${n.examiner_name}</span><span>${n.created_at}</span></div>
+                </div>`;
+            });
+            if(nHtml === '') nHtml = '<span class="text-[10px] text-outline font-data-mono italic">No investigator notes attached.</span>';
+            document.getElementById('notes-container').innerHTML = nHtml;
+
+        });
+    }
+
+    function addNote() {
+        const txt = document.getElementById('new-note-input').value;
+        if(txt && currentSessionId && window.pywebview) {
+            window.pywebview.api.add_note(currentSessionId, txt).then(() => {
+                document.getElementById('new-note-input').value = '';
+                loadInvestigationData(currentSessionId);
+            });
+        }
+    }
+
+    function addTag() {
+        const txt = document.getElementById('new-tag-input').value;
+        if(txt && currentSessionId && window.pywebview) {
+            window.pywebview.api.add_tag(currentSessionId, txt).then(() => {
+                document.getElementById('new-tag-input').value = '';
+                loadInvestigationData(currentSessionId);
+            });
+        }
+    }
+
+    function queueReprocess() {
+        if(currentSessionId && window.pywebview) {
+            const reason = prompt("Reason for reprocessing:");
+            if(reason) {
+                // To reprocess we need filepath, we can guess it or pass empty if api allows
+                window.pywebview.api.queue_reprocess(currentSessionId, currentReportPath, reason).then(r => {
+                    alert('Evidence queued for reprocessing!');
+                });
+            }
+        }
+    }
+
+    function openEvidencePack() {
+        if(currentSessionId && window.pywebview) {
+            window.pywebview.api.open_evidence_package(currentSessionId).then(resStr => {
+                const res = JSON.parse(resStr);
+                if(!res.success) alert(res.error || 'No evidence package found.');
+            });
+        }
+    }
+
+    function openCurrentPDF() {
+        if(currentReportPath && window.pywebview) {
+            window.pywebview.api.open_report(currentReportPath);
+        }
+    }
+
+    function loadAuditLog() {
+        if (!window.pywebview) return;
+        window.pywebview.api.get_audit_log(200).then(resStr => {
+            const entries = JSON.parse(resStr);
+            const tbody = document.getElementById('audit-log-body');
+            if (!entries || entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-4 text-outline text-center">No audit entries yet.</td></tr>';
+                return;
+            }
+            const actionColors = {
+                'SESSION_START':     'text-[#27ae60]',
+                'SESSION_END':       'text-outline',
+                'TAB_SWITCHED':      'text-primary',
+                'VIEW_REPORT':       'text-primary',
+                'FILTER_APPLIED':    'text-[#f5a623]',
+                'SEARCH_PERFORMED':  'text-[#f5a623]',
+                'NOTE_ADDED':        'text-[#27ae60]',
+                'TAG_ADDED':         'text-[#27ae60]',
+                'EVIDENCE_EXPORTED': 'text-[#e94560]',
+                'REPROCESS_QUEUED':  'text-[#e94560]',
+                'PDF_OPENED':        'text-primary',
+                'FOLDER_OPENED':     'text-primary',
+                'AUDIT_VERIFIED':    'text-[#27ae60]',
+                'AUDIT_LOG_EXPORTED':'text-outline',
+            };
+            tbody.innerHTML = entries.map(e => {
+                const color = actionColors[e.action_type] || 'text-outline';
+                const ts = e.timestamp.replace('T', ' ').substring(0, 19) + ' UTC';
+                const target = e.target.length > 40 ? e.target.substring(0, 37) + '...' : e.target;
+                return `<tr class="hover:bg-white/3 transition-colors">
+                    <td class="px-4 py-2 text-outline">${e.id}</td>
+                    <td class="px-4 py-2 text-outline">${ts}</td>
+                    <td class="px-4 py-2 text-white">${e.examiner}</td>
+                    <td class="px-4 py-2 ${color} font-bold">${e.action_type}</td>
+                    <td class="px-4 py-2 text-on-surface-variant" title="${e.target}">${target}</td>
+                    <td class="px-4 py-2 text-outline font-mono">${e.chain_hmac_preview}</td>
+                </tr>`;
+            }).join('');
+        });
+    }
+
+    function verifyAudit() {
+        if (!window.pywebview) return;
+        window.pywebview.api.verify_audit_integrity().then(resStr => {
+            const res = JSON.parse(resStr);
+            const banner = document.getElementById('audit-integrity-banner');
+            banner.classList.remove('hidden');
+            if (res.valid) {
+                banner.className = 'mb-4 p-3 rounded border font-data-mono text-xs bg-[#27ae60]/10 border-[#27ae60]/30 text-[#27ae60]';
+                banner.innerHTML = '<span class="material-symbols-outlined text-[14px] align-middle">verified_user</span> ' + res.message;
+            } else {
+                banner.className = 'mb-4 p-3 rounded border font-data-mono text-xs bg-[#e94560]/10 border-[#e94560]/30 text-[#e94560]';
+                banner.innerHTML = '<span class="material-symbols-outlined text-[14px] align-middle">report</span> ' + res.message;
+            }
+            loadAuditLog();
+        });
+    }
+
+    function exportAudit() {
+        if (!window.pywebview) return;
+        window.pywebview.api.export_audit_csv().then(resStr => {
+            const res = JSON.parse(resStr);
+            if (res.path) {
+                alert('Audit log exported:\n' + res.path + '\n(' + res.rows + ' entries)');
+                loadAuditLog();
+            } else {
+                alert('Export failed: ' + (res.error || 'Unknown error'));
+            }
+        });
+    }
+
+    function openFolder(path) {
+        if(window.pywebview) window.pywebview.api.open_folder(path);
+    }
+
+    function refreshData() {
+        if(window.pywebview) {
+            window.pywebview.api.refresh_data().then(resStr => {
+                GLOBAL_DATA = JSON.parse(resStr);
+                renderAll();
+            });
+        } else {
+            window.location.reload();
+        }
+    }
+</script>
+<script type="application/json" id="initial-data">__INITIAL_DATA__</script>
+</body>
+</html>
