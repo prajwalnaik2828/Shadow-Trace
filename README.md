@@ -360,10 +360,10 @@ reports/stego/20261107_193701_artifact_evidence_package.zip
 ![Forensic Reports Walkthrough](ui/assets/videos/forensic_reports_demo.gif)
 
 ### 3. Case Manager & Evidence Explorer
-*(Walkthrough video coming soon)*
+![Case Manager Walkthrough](ui/assets/videos/case_manager_demo.gif)
 
 ### 4. Quarantine Isolation Vault & Recovery
-*(Walkthrough video coming soon)*
+![Quarantine Vault Walkthrough](ui/assets/videos/quarantine_vault_demo.gif)
 
 ---
 
