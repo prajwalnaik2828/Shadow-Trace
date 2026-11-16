@@ -6,7 +6,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-lightgrey.svg)]()
 [![Compliance](https://img.shields.io/badge/forensic%20standard-ISO%2FIEC%2027037-brightgreen.svg)]()
 [![ACPO](https://img.shields.io/badge/guideline-ACPO%20Good%20Practice-green.svg)]()
-[![License](https://img.shields.io/badge/license-Pending%20Selection-orange.svg)](#16-license)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
@@ -403,4 +403,4 @@ In adherence to ISO/IEC 27037 disclosure requirements, the following six limitat
 
 ## 16. License
 
-License selection is currently under review by the project authors. See the project repository or release documentation for license terms before redistribution.
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for the full license terms, conditions, and copyright attributions.
