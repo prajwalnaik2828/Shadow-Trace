@@ -252,6 +252,7 @@ Open `.env` in a text editor and fill in your environment parameters:
 VIRUSTOTAL_API_KEY=your_virustotal_api_key_here
 HYBRID_ANALYSIS_KEY=your_hybrid_analysis_key_here
 HMAC_SECRET_KEY=your_secure_random_hmac_key_here
+DEFAULT_EXAMINER_PASSWORD=ShadowTrace@2025
 VT_MODE=hash_only
 OFFLINE_SCAN_MODE=false
 HYBRID_ANALYSIS_MODE=hash_only
@@ -277,6 +278,14 @@ Launch the desktop forensic interface:
 ```powershell
 python main.py
 ```
+
+> [!NOTE]
+> **Default Examiner Lock Password:**
+> The master password to unlock the application or modify protected examiner profile settings is:
+> ```text
+> ShadowTrace@2025
+> ```
+> You can customize this password anytime in `.env` via `DEFAULT_EXAMINER_PASSWORD=` or directly within the **User Profile** settings inside the application.
 
 ---
 
