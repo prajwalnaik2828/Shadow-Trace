@@ -356,14 +356,14 @@ reports/stego/20261107_193701_artifact_evidence_package.zip
 ### 1. Forensic Dashboard & Real-Time Telemetry
 ![Forensic Dashboard Walkthrough](ui/assets/videos/dashboard_demo.gif)
 
-### 2. Forensic Dossier & Executive Summary Report Generation
-![Forensic Reports Walkthrough](ui/assets/videos/forensic_reports_demo.gif)
-
-### 3. Case Manager & Evidence Explorer
+### 2. Case Manager & Evidence Explorer
 ![Case Manager Walkthrough](ui/assets/videos/case_manager_demo.gif)
 
-### 4. Quarantine Isolation Vault & Recovery
+### 3. Quarantine Isolation Vault & Recovery
 ![Quarantine Vault Walkthrough](ui/assets/videos/quarantine_vault_demo.gif)
+
+### 4. Forensic Dossier & Executive Summary Report Generation
+![Forensic Reports Walkthrough](ui/assets/videos/forensic_reports_demo.gif)
 
 ---
 
